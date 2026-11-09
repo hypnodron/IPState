@@ -1,0 +1,45 @@
+name: Prepare draft release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  draft-release:
+    if: github.event.created
+    runs-on: macos-26
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check tag matches app version
+        run: |
+          version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
+          if [[ "$GITHUB_REF_NAME" != "v$version" ]]; then
+            printf 'Tag must match the app version: v%s\n' "$version" >&2
+            exit 1
+          fi
+      - name: Test without live provider requests
+        run: bash Scripts/swift.sh test
+      - name: Package universal app
+        run: bash Scripts/package-release.sh
+      - name: Create draft with archive and checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            build/release/*.zip build/release/*.sha256 \
+            --verify-tag --draft \
+            --title "IP State ${GITHUB_REF_NAME#v}" \
+            --notes-file docs/release-notes.md

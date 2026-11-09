@@ -1,0 +1,25 @@
+name: Bug report
+description: Report unexpected behavior in IP State.
+body:
+  - type: markdown
+    attributes:
+      value: Do not include personal IP addresses, saved history, credentials, or private network details. Use example addresses.
+  - type: input
+    id: versions
+    attributes:
+      label: App and macOS versions
+      placeholder: IP State 0.10.3, macOS 26
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include what you expected and steps to reproduce the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Relevant context
+      description: For example, IPv4 or IPv6, a VPN exit change, or an unavailable lookup service. Omit personal details.

@@ -1,0 +1,30 @@
+{
+  "fill": {
+    "solid": "srgb:1.00000,1.00000,1.00000,1.00000"
+  },
+  "groups": [
+    {
+      "name": "Globe Beacon",
+      "layers": [
+        {
+          "name": "Cobalt and Amber",
+          "image-name": "Globe-Bright.png",
+          "glass": false
+        }
+      ],
+      "specular": false,
+      "blur-material": 0,
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}
