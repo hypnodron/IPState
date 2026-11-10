@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.5 — Compact defaults for VPN users
+
+- Show the country flag and country code by default on new installations.
+- Limit optional city names to 16 characters and country names to 20 on new installations.
+- Preserve existing layouts, unlimited names, and saved preferences across upgrades.
+- Document the complete default configuration and its rationale.
+
 ## 0.10.4 — Faster recovery and remembered locations
 
 - Clear the outage icon as soon as either IP address resolves, before location lookup finishes.

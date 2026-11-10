@@ -4,6 +4,9 @@ IP State lives in the menu bar. Click its item to view addresses, refresh, copy 
 
 There is no Dock icon or main app window.
 
+New installations show the country flag and country code, check every five seconds, and enable IP-change notifications subject to macOS permission.
+Connection notifications, login startup, and history are opt-in. See [Default settings](defaults.md) for the complete choices and rationale.
+
 ## Refresh behavior
 
 Network events trigger an immediate lookup. Periodic checks catch public IP changes that produce no local network event.
@@ -54,6 +57,8 @@ If all items are unchecked, the app shows a globe so its menu stays accessible.
 
 Check **City name** or **Country name** to reveal a **Max** field beside that item.
 Zero means no limit. Longer names end in an ellipsis that counts toward the limit.
+New installations use 16 characters for city names and 20 for country names when those items are enabled.
+Existing name limits remain unchanged, including previously unlimited names.
 These limits affect full names; country codes and custom city codes remain separate items.
 Press Return or leave the field to apply a number.
 

@@ -78,6 +78,7 @@ Preferences, cached locations, and optional history stay on your Mac. History is
 See [Privacy and network requests](docs/privacy.md) for the exact providers and storage behavior.
 
 For detailed settings, notification, and connection behavior, see [Using IP State](docs/usage.md).
+See [Default settings](docs/defaults.md) for the initial configuration and its rationale for VPN users.
 
 ## Project layout
 

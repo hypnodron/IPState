@@ -19,7 +19,7 @@ public struct MenuBarLayout: Equatable, Sendable {
     public private(set) var order: [MenuBarComponent]
     public private(set) var enabled: Set<MenuBarComponent>
 
-    public init(order: [MenuBarComponent] = MenuBarComponent.allCases, enabled: Set<MenuBarComponent> = [.countryCode]) {
+    public init(order: [MenuBarComponent] = MenuBarComponent.allCases, enabled: Set<MenuBarComponent> = [.flag, .countryCode]) {
         var seen: Set<MenuBarComponent> = []
         self.order = (order + MenuBarComponent.allCases).filter { seen.insert($0).inserted }
         self.enabled = enabled
@@ -67,6 +67,7 @@ public struct MenuBarLayout: Equatable, Sendable {
     static func migrated(from legacy: String?) -> Self {
         let enabled: Set<MenuBarComponent>
         switch legacy {
+        case nil: return Self()
         case "ip": enabled = [.ip]
         case "flag": enabled = [.flag]
         case "flagAndIP": enabled = [.flag, .ip]
