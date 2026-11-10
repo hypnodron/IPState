@@ -6,12 +6,12 @@ import IPStateCore
 
 @MainActor @Observable
 final class AppModel {
-    let ipv4 = IPMonitor(client: LookupClient(), family: .ipv4)
-    let ipv6 = IPMonitor(client: LookupClient(), family: .ipv6)
-    let preferences = Preferences()
+    let ipv4: IPMonitor
+    let ipv6: IPMonitor
+    let preferences: Preferences
     let history = IPHistory()
-    let notifications = NotificationService()
-    let networkHealth = NetworkHealth()
+    @ObservationIgnored lazy var notifications = NotificationService()
+    let networkHealth: NetworkHealth
     private(set) var launchAtLogin = SMAppService.mainApp.status == .enabled
     private(set) var loginError: String?
     private(set) var displayFamily: IPFamily = .ipv4
@@ -19,10 +19,32 @@ final class AppModel {
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
     @ObservationIgnored private var refreshTasks: [IPFamily: Task<Void, Never>] = [:]
     @ObservationIgnored private var timerTasks: [IPFamily: Task<Void, Never>] = [:]
+    @ObservationIgnored private var recoveryTask: Task<Void, Never>?
     @ObservationIgnored private var connectionNotificationTask: Task<Void, Never>?
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private var isAsleep = false
     @ObservationIgnored private var hasStarted = false
+
+    init(client: any IPLookingUp = LookupClient(), preferences: Preferences = Preferences(),
+         networkHealth: NetworkHealth = NetworkHealth(), locationCache: IPLocationCache = IPLocationCache()) {
+        ipv4 = IPMonitor(client: client, family: .ipv4, locationCache: locationCache)
+        ipv6 = IPMonitor(client: client, family: .ipv6, locationCache: locationCache)
+        self.preferences = preferences
+        self.networkHealth = networkHealth
+        for family in IPFamily.allCases {
+            addressMonitor(for: family).onAddressResolved = { [weak self] in
+                guard let self else { return }
+                displayFamily = .automatic(ipv4: ipv4, ipv6: ipv6, previous: displayFamily)
+                networkHealth.lookupSucceeded()
+                scheduleRecoveryCheck()
+            }
+        }
+        preferences.onIntervalChange = { [weak self] in
+            guard let self else { return }
+            for family in IPFamily.allCases { scheduleNextCheck(for: family) }
+            scheduleRecoveryCheck()
+        }
+    }
 
     var monitor: IPMonitor { addressMonitor(for: displayFamily) }
 
@@ -72,9 +94,6 @@ final class AppModel {
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
-        preferences.onIntervalChange = { [weak self] in
-            for family in IPFamily.allCases { self?.scheduleNextCheck(for: family) }
-        }
         networkHealth.onConnectionChange = { [weak self] change in self?.notifyConnectionChange(change) }
         for family in IPFamily.allCases {
             addressMonitor(for: family).onChange = { [weak self] change in
@@ -145,6 +164,7 @@ final class AppModel {
             await networkHealth.update(monitors: [ipv4, ipv6])
             guard !Task.isCancelled else { return }
             scheduleNextCheck(for: family)
+            scheduleRecoveryCheck()
         }
     }
 
@@ -209,9 +229,30 @@ final class AppModel {
     }
 
     private func cancelPendingWork() {
+        recoveryTask?.cancel()
+        recoveryTask = nil
         for task in timerTasks.values { task.cancel() }
         for task in refreshTasks.values { task.cancel() }
         timerTasks.removeAll()
         refreshTasks.removeAll()
+    }
+
+    private func scheduleRecoveryCheck() {
+        guard !isAsleep, preferences.interval != .off, networkHealth.condition == .unreachable else {
+            recoveryTask?.cancel()
+            recoveryTask = nil
+            return
+        }
+        guard recoveryTask == nil else { return }
+        recoveryTask = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(3)) }
+            catch { return }
+            guard let self, !Task.isCancelled else { return }
+            let recovered = await networkHealth.checkRecovery()
+            guard !Task.isCancelled else { return }
+            recoveryTask = nil
+            if recovered { refresh() }
+            else { scheduleRecoveryCheck() }
+        }
     }
 }

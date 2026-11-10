@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.4 — Faster recovery and remembered locations
+
+- Clear the outage icon as soon as either IP address resolves, before location lookup finishes.
+- Check for Internet recovery independently of IP lookup backoff during confirmed outages.
+- Refresh both address families when the recovery probe succeeds. Off still disables timer retries.
+- Remember locations for up to 100 IPs across restarts. Refresh day-old results and expire them after seven days.
+
 ## 0.10.3 — Initial public preview
 
 - Show public IP, country, city, and editable city codes in the macOS menu bar.

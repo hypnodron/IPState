@@ -17,7 +17,7 @@ The archive name contains the version from `Support/Info.plist`.
 Verify an archive's checksum from its directory:
 
 ```sh
-shasum -a 256 -c IPState-0.10.3-universal-macos.zip.sha256
+shasum -a 256 -c IPState-0.10.4-universal-macos.zip.sha256
 ```
 
 Before distributing a new build, extract it and check the signature, launch, settings, and icon in Finder.
@@ -51,7 +51,7 @@ For each release:
 2. Update `CHANGELOG.md` and `docs/release-notes.md`.
 3. Run the local checks and review the extracted app.
 4. Commit the release changes.
-5. Create and push the matching tag, such as `v0.10.3`.
+5. Create and push the matching tag, such as `v0.10.4`.
 6. Review the workflow result and draft release.
 7. Publish the draft when its notes, signing status, and assets are correct.
 

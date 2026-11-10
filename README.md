@@ -19,6 +19,7 @@ Get a notification when your public IP changes.
 - Keep optional local IP history with a configurable retention count.
 - Copy addresses, refresh manually, and optionally start at login.
 - Use four location providers with automatic fallbacks.
+- Remember recent IP locations across restarts, with automatic refresh and expiry.
 
 <p align="center">
   <img src="docs/images/settings.png" width="560" alt="IP State settings with configurable menu bar items, checks, notifications, and history">
@@ -73,7 +74,7 @@ IPv4 and IPv6 can have different exits. Split tunnels and proxies may route othe
 
 IP State has no account, analytics, application server, or location permission.
 It contacts public IP and location services, which receive your public IP.
-Preferences and optional history stay on your Mac. History is off by default.
+Preferences, cached locations, and optional history stay on your Mac. History is off by default.
 See [Privacy and network requests](docs/privacy.md) for the exact providers and storage behavior.
 
 For detailed settings, notification, and connection behavior, see [Using IP State](docs/usage.md).

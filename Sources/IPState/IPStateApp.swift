@@ -26,7 +26,7 @@ struct IPStateApp: App {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    let model = AppModel()
+    let model = AppModel(locationCache: IPLocationCache(defaults: UserDefaults(suiteName: "IPStateSettings")))
     private var settingsController: SettingsWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) { model.start() }

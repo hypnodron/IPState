@@ -82,6 +82,14 @@ public final class NetworkHealth {
 
     public func resetConnectionBaseline() { connectionWasReachable = nil }
 
+    public func lookupSucceeded() {
+        guard pathAvailable != false else { return }
+        generation += 1
+        isProbing = false
+        lastProbe = nil
+        condition = .online
+    }
+
     public func pathChanged(available: Bool) {
         generation += 1
         pathAvailable = available
@@ -94,14 +102,20 @@ public final class NetworkHealth {
     public func update(monitors: [IPMonitor]) async {
         guard pathAvailable != false, !Task.isCancelled, !monitors.isEmpty else { return }
         if monitors.contains(where: { !$0.isStale && ($0.lastSuccess ?? .distantPast) >= epoch }) {
-            generation += 1
-            isProbing = false
-            lastProbe = nil
-            condition = .online
+            lookupSucceeded()
             return
         }
         guard !monitors.contains(where: \.isRefreshing), !isProbing else { return }
         if let lastProbe, Date().timeIntervalSince(lastProbe) < 30 { return }
+        _ = await probe()
+    }
+
+    public func checkRecovery() async -> Bool {
+        guard condition == .unreachable, pathAvailable != false, !isProbing, !Task.isCancelled else { return false }
+        return await probe()
+    }
+
+    private func probe() async -> Bool {
         let request = generation
         isProbing = true
         lastProbe = Date()
@@ -109,8 +123,9 @@ public final class NetworkHealth {
         let reachable = await client.isInternetReachable()
         guard request == generation, !Task.isCancelled, pathAvailable != false else {
             if request == generation { lastProbe = nil }
-            return
+            return false
         }
         condition = reachable ? .lookupUnavailable : .unreachable
+        return reachable
     }
 }

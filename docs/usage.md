@@ -22,6 +22,13 @@ Failed, cancelled, or superseded location lookups still produce one alert for a 
 Equivalent IPv6 address spellings do not produce false change notifications.
 macOS notification permission and Focus settings control visible banners.
 
+## Remembered locations
+
+The app remembers locations for up to 100 IP addresses across restarts, independently of optional history.
+Returning to a known IP displays its cached country and city immediately.
+Results stay fresh for 24 hours. Older results remain visible while a background lookup checks for location changes.
+Entries older than seven days expire and require a new lookup. Failed updates keep any unexpired cached location.
+
 ## States
 
 | Menu bar | Meaning |
@@ -63,7 +70,11 @@ These codes are editable labels derived from the city name.
 
 The system network monitor detects a disconnected path immediately.
 If the network remains connected but all IP lookups fail, a short HTTPS probe helps distinguish a service outage from an unreachable Internet.
-The probe runs at most once per 30 seconds during failures, and resets after a network change or recovery.
+While the Internet remains unreachable, a recovery probe runs three seconds after the previous check finishes.
+This probe bypasses IP lookup backoff and refreshes both addresses as soon as connectivity returns.
+Recovery probes pause during sleep and stop when periodic checks are Off or no network path is available.
+If the Internet is reachable but IP services fail, probes remain limited to once per 30 seconds.
+A successful IP lookup clears the outage status immediately, without waiting for city or country data.
 
 Connection icons replace the label within the space reserved by its last known text.
 The stale indicator also uses an overlay, so it does not expand the item.

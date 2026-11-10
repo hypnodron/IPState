@@ -61,17 +61,19 @@ public final class IPMonitor {
     public private(set) var lastError: String?
     public private(set) var lastLocationError: String?
     public var onChange: (@MainActor (IPChange) -> Void)?
+    public var onAddressResolved: (@MainActor () -> Void)?
     /// Resolves each change with its own location, or nil after a failed or interrupted lookup.
     public var onChangeWithLocation: (@MainActor (IPChange, IPLocation?) -> Void)?
 
     @ObservationIgnored private let client: any IPLookingUp
     @ObservationIgnored private var generation = 0
-    @ObservationIgnored private var locations: [String: IPLocation] = [:]
+    @ObservationIgnored private let locationCache: IPLocationCache
     @ObservationIgnored private var pendingLocatedChange: IPChange?
 
-    public init(client: any IPLookingUp, family: IPFamily = .ipv4) {
+    public init(client: any IPLookingUp, family: IPFamily = .ipv4, locationCache: IPLocationCache = IPLocationCache()) {
         self.client = client
         self.family = family
+        self.locationCache = locationCache
     }
 
     public func refresh() async {
@@ -102,8 +104,9 @@ public final class IPMonitor {
 
         let previous = ip
         ip = address
-        countryCode = locations[address]?.countryCode
-        city = locations[address]?.city
+        let cached = locationCache.location(for: address)
+        countryCode = cached?.countryCode
+        city = cached?.city
         isStale = false
         lastSuccess = Date()
         failureCount = 0
@@ -118,15 +121,14 @@ public final class IPMonitor {
         }
 
         guard request == generation, !Task.isCancelled else { return }
-        guard locations[address] == nil else { return }
+        onAddressResolved?()
+        guard request == generation, !Task.isCancelled, locationCache.needsRefresh(for: address) else { return }
         do {
             let location = try await client.location(for: address)
             guard request == generation, !Task.isCancelled else { return }
             if let code = normalizedCountryCode(location.countryCode) {
-                // Bound the cache for long sessions with frequent address changes.
-                if locations.count >= 100 { locations.removeAll() }
                 let normalized = IPLocation(countryCode: code, city: location.city)
-                locations[address] = normalized
+                locationCache.store(normalized, for: address)
                 countryCode = code
                 city = normalized.city
             } else {
@@ -149,7 +151,7 @@ public final class IPMonitor {
     private func completeLocatedChange() {
         guard let change = pendingLocatedChange else { return }
         pendingLocatedChange = nil
-        onChangeWithLocation?(change, locations[change.newIP])
+        onChangeWithLocation?(change, locationCache.location(for: change.newIP))
     }
 
     public func setOffline(_ offline: Bool) {

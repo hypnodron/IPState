@@ -2,6 +2,9 @@ IP State shows your public IP and location in the macOS menu bar and alerts you 
 
 This preview includes automatic IPv4/IPv6 selection, configurable checks, connection alerts, and optional local history.
 
+Version 0.10.4 clears the outage icon before location lookups finish and detects recovery without waiting for IP lookup backoff.
+It also remembers recent IP locations across restarts, with automatic revalidation and expiry.
+
 Download the universal macOS ZIP for Apple silicon or Intel, extract it, and move **IP State.app** into Applications.
 Requires macOS 14 or later.
 
