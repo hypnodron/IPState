@@ -15,13 +15,16 @@ Changes that occur entirely between checks cannot be observed.
 
 Off disables periodic checks and timer retries. Launch, wake, network events, and manual refresh still work.
 The app pauses checks while offline or asleep. Failed IP lookups use capped backoff for each address family.
+Network changes and wake reset this backoff for the new path.
 Unavailable IPv6 does not delay IPv4 checks. Each family keeps its own address, location, update time, and stale state.
+Location enrichment runs independently and does not postpone the next address check. Unchanged-address polls share any pending location request.
 
 The first successful lookup after launch sets a separate baseline for each family, without a notification.
 Later IP changes produce one notification each, even when the country stays the same.
 The menu bar and history update as soon as an IP change is detected.
 The notification waits for that IP's location lookup, then includes its location or an explicit unavailable message.
 Failed, cancelled, or superseded location lookups still produce one alert for a detected change without reusing another IP's location.
+Disabling IP alerts or quitting cancels pending IP alert delivery.
 Equivalent IPv6 address spellings do not produce false change notifications.
 macOS notification permission and Focus settings control visible banners.
 

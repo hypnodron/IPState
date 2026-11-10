@@ -1,11 +1,15 @@
 # Changelog
 
-## 0.10.5 — Compact defaults for VPN users
+## 0.10.5 — VPN defaults and responsive IP checks
 
 - Show the country flag and country code by default on new installations.
 - Limit optional city names to 16 characters and country names to 20 on new installations.
 - Preserve existing layouts, unlimited names, and saved preferences across upgrades.
 - Document the complete default configuration and its rationale.
+- Poll public addresses independently of location enrichment, preserving pending location results and one alert per change.
+- Reset retry backoff after network changes and wake so a new VPN path receives prompt checks.
+- Share connectivity probes across refreshes without losing results when a waiter cancels.
+- Cancel queued IP alerts when their switch is disabled, and avoid permission requests from canceled test alerts.
 
 ## 0.10.4 — Faster recovery and remembered locations
 

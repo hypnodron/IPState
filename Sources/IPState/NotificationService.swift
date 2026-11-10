@@ -3,6 +3,23 @@ import Observation
 import UserNotifications
 import IPStateCore
 
+@MainActor
+protocol NotificationCenterAccess: AnyObject {
+    func setDelegate(_ delegate: any UNUserNotificationCenterDelegate)
+    func authorizationStatus() async -> UNAuthorizationStatus
+    func requestAuthorization() async throws
+    func add(_ request: UNNotificationRequest) async throws
+}
+
+@MainActor
+private final class SystemNotificationCenter: NotificationCenterAccess {
+    private let center = UNUserNotificationCenter.current()
+    func setDelegate(_ delegate: any UNUserNotificationCenterDelegate) { center.delegate = delegate }
+    func authorizationStatus() async -> UNAuthorizationStatus { await center.notificationSettings().authorizationStatus }
+    func requestAuthorization() async throws { _ = try await center.requestAuthorization(options: [.alert, .sound]) }
+    func add(_ request: UNNotificationRequest) async throws { try await center.add(request) }
+}
+
 @MainActor @Observable
 final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     static func makeContent(title: String, info: IPNotificationInfo, thread: String,
@@ -20,22 +37,23 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     private(set) var errorMessage: String?
     private(set) var testResult: String?
     private(set) var isSendingTest = false
-    @ObservationIgnored private let center = UNUserNotificationCenter.current()
+    @ObservationIgnored private let center: any NotificationCenterAccess
 
-    override init() {
+    init(center: any NotificationCenterAccess = SystemNotificationCenter()) {
+        self.center = center
         super.init()
-        center.delegate = self
+        center.setDelegate(self)
     }
 
     func updateAuthorization() async {
-        authorization = await center.notificationSettings().authorizationStatus
+        authorization = await center.authorizationStatus()
     }
 
     func requestAuthorizationIfNeeded() async {
         await updateAuthorization()
-        guard authorization == .notDetermined else { return }
+        guard !Task.isCancelled, authorization == .notDetermined else { return }
         do {
-            _ = try await center.requestAuthorization(options: [.alert, .sound])
+            try await center.requestAuthorization()
             errorMessage = nil
         } catch {
             errorMessage = "Could not request notification permission: \(error.localizedDescription)"
@@ -72,21 +90,24 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         testResult = nil
         defer { isSendingTest = false }
         await requestAuthorizationIfNeeded()
+        guard !Task.isCancelled else { return }
         guard authorization == .authorized || authorization == .provisional else {
             testResult = "Allow IP State in System Settings → Notifications, then try again."
             return
         }
         do {
             try await deliver(Self.makeContent(title: "IP State test notification", info: info, thread: "test-notifications"))
+            guard !Task.isCancelled else { return }
             errorMessage = nil
             testResult = "Test notification sent. If no banner appears, check notification settings or Focus."
         } catch {
+            guard !Task.isCancelled else { return }
             testResult = "Could not send the test notification: \(error.localizedDescription)"
         }
     }
 
     private func deliver(_ content: UNMutableNotificationContent) async throws {
-        guard !Task.isCancelled else { return }
+        try Task.checkCancellation()
         try await center.add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
 

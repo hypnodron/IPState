@@ -39,6 +39,7 @@ The app tries these providers in order, stopping when it receives a valid countr
 4. [FreeIPAPI](https://freeipapi.com/docs/api-reference/get-ip-info) — `free.freeipapi.com`.
 
 A missing city may trigger the next provider. Valid responses enter the local cache described above.
+Later providers must agree with the first valid country result before their city is accepted.
 Providers receive the queried IP, the request's source public IP, and normal HTTPS request metadata.
 Their own privacy policies and terms apply to those requests.
 

@@ -62,13 +62,16 @@ public final class IPMonitor {
     public private(set) var lastLocationError: String?
     public var onChange: (@MainActor (IPChange) -> Void)?
     public var onAddressResolved: (@MainActor () -> Void)?
-    /// Resolves each change with its own location, or nil after a failed or interrupted lookup.
+    /// Resolves each change with its own fresh or cached location, or nil when neither is available.
     public var onChangeWithLocation: (@MainActor (IPChange, IPLocation?) -> Void)?
 
     @ObservationIgnored private let client: any IPLookingUp
     @ObservationIgnored private var generation = 0
     @ObservationIgnored private let locationCache: IPLocationCache
     @ObservationIgnored private var pendingLocatedChange: IPChange?
+    @ObservationIgnored private var locationTask: Task<Void, Never>?
+    @ObservationIgnored private var locationAddress: String?
+    @ObservationIgnored private var locationGeneration = 0
 
     public init(client: any IPLookingUp, family: IPFamily = .ipv4, locationCache: IPLocationCache = IPLocationCache()) {
         self.client = client
@@ -77,32 +80,48 @@ public final class IPMonitor {
     }
 
     public func refresh() async {
-        guard !isOffline else { return }
+        let pending = await fetchAddress()
+        await withTaskCancellationHandler {
+            await pending?.value
+        } onCancel: {
+            pending?.cancel()
+        }
+    }
+
+    public func refreshAddress() async {
+        _ = await fetchAddress()
+    }
+
+    private func fetchAddress() async -> Task<Void, Never>? {
+        guard !isOffline else { return nil }
         generation += 1
         let request = generation
         isRefreshing = true
         defer {
             if request == generation {
                 isRefreshing = false
-                completeLocatedChange()
             }
         }
 
         let address: String
         do {
             let result = try await (family == .ipv4 ? client.publicIPv4() : client.publicIPv6())
-            guard request == generation, !Task.isCancelled else { return }
+            guard request == generation, !Task.isCancelled else { return nil }
             guard let normalized = normalizedIPAddress(result, family: family) else { throw LookupError.invalidAddress }
             address = normalized
         } catch {
-            guard request == generation, !Task.isCancelled else { return }
+            guard request == generation, !Task.isCancelled else { return nil }
             isStale = true
             failureCount += 1
             lastError = error.localizedDescription
-            return
+            return nil
         }
 
         let previous = ip
+        if previous != address {
+            cancelLocation()
+            completeLocatedChange()
+        }
         ip = address
         let cached = locationCache.location(for: address)
         countryCode = cached?.countryCode
@@ -114,36 +133,63 @@ public final class IPMonitor {
         lastLocationError = nil
 
         if let previous, previous != address {
-            completeLocatedChange()
             let change = IPChange(oldIP: previous, newIP: address, family: family)
             pendingLocatedChange = change
             onChange?(change)
         }
 
-        guard request == generation, !Task.isCancelled else { return }
+        guard request == generation, !Task.isCancelled else { return nil }
         onAddressResolved?()
-        guard request == generation, !Task.isCancelled, locationCache.needsRefresh(for: address) else { return }
-        do {
-            let location = try await client.location(for: address)
-            guard request == generation, !Task.isCancelled else { return }
-            if let code = normalizedCountryCode(location.countryCode) {
-                let normalized = IPLocation(countryCode: code, city: location.city)
-                locationCache.store(normalized, for: address)
-                countryCode = code
-                city = normalized.city
-            } else {
-                lastLocationError = "Location data is unavailable. Try Refresh Now."
-            }
-        } catch {
-            guard request == generation, !Task.isCancelled else { return }
-            lastLocationError = "Location lookup failed. Try Refresh Now."
+        guard request == generation, !Task.isCancelled else { return nil }
+        if locationCache.needsRefresh(for: address) {
+            if locationAddress != address { startLocation(for: address) }
+        } else {
+            completeLocatedChange()
         }
+        return locationTask
+    }
+
+    private func startLocation(for address: String) {
+        locationGeneration += 1
+        let request = locationGeneration
+        locationAddress = address
+        locationTask = Task { [weak self, client] in
+            do {
+                let location = try await client.location(for: address)
+                guard let self, request == locationGeneration else { return }
+                if !Task.isCancelled {
+                    if let code = normalizedCountryCode(location.countryCode) {
+                        let normalized = IPLocation(countryCode: code, city: location.city)
+                        locationCache.store(normalized, for: address)
+                        countryCode = code
+                        city = normalized.city
+                    } else {
+                        lastLocationError = "Location data is unavailable. Try Refresh Now."
+                    }
+                }
+            } catch {
+                guard let self, request == locationGeneration else { return }
+                if !Task.isCancelled { lastLocationError = "Location lookup failed. Try Refresh Now." }
+            }
+            guard let self, request == locationGeneration else { return }
+            locationTask = nil
+            locationAddress = nil
+            completeLocatedChange()
+        }
+    }
+
+    private func cancelLocation() {
+        locationGeneration += 1
+        locationTask?.cancel()
+        locationTask = nil
+        locationAddress = nil
     }
 
     public func cancelRefresh(markStale: Bool = false) {
         // Finish interrupted changes with their own cached data instead of dropping alerts.
         completeLocatedChange()
         generation += 1
+        cancelLocation()
         isRefreshing = false
         if markStale { isStale = true }
     }
@@ -156,6 +202,7 @@ public final class IPMonitor {
 
     public func setOffline(_ offline: Bool) {
         isOffline = offline
+        failureCount = 0
         if offline {
             cancelRefresh()
             isStale = true

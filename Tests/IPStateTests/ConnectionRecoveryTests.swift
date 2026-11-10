@@ -5,12 +5,16 @@ import IPStateCore
 
 private actor RecoveryLookup: IPLookingUp {
     private let family: IPFamily
+    private var ipv4 = "203.0.113.10"
+    private(set) var addressCalls = 0
+    private(set) var locationCalls = 0
     private var locationRequest: CheckedContinuation<Void, Never>?
     private var locationResult: CheckedContinuation<IPLocation, Never>?
 
     init(family: IPFamily) { self.family = family }
+    func setIPv4(_ value: String) { ipv4 = value }
     func publicIPv4() async throws -> String {
-        if family == .ipv4 { return "203.0.113.10" }
+        if family == .ipv4 { addressCalls += 1; return ipv4 }
         try await Task.sleep(for: .seconds(60))
         throw URLError(.cannotConnectToHost)
     }
@@ -20,7 +24,8 @@ private actor RecoveryLookup: IPLookingUp {
         throw URLError(.cannotConnectToHost)
     }
     func location(for ip: String) async throws -> IPLocation {
-        await withCheckedContinuation {
+        locationCalls += 1
+        return await withCheckedContinuation {
             locationResult = $0
             locationRequest?.resume()
             locationRequest = nil
@@ -47,12 +52,26 @@ private struct UnreachableProbe: ConnectivityChecking {
 
 private actor RecoverableLookup: IPLookingUp {
     private var available = false
+    private(set) var calls = 0
     func recover() { available = true }
     func publicIPv4() async throws -> String {
+        calls += 1
         guard available else { throw URLError(.notConnectedToInternet) }
         return "203.0.113.20"
     }
     func location(for ip: String) async throws -> IPLocation { IPLocation(countryCode: "NL", city: "Amsterdam") }
+}
+
+private actor SharedRecoveryProbe: ConnectivityChecking {
+    private var calls = 0
+    private var pending: CheckedContinuation<Bool, Never>?
+    var isWaiting: Bool { pending != nil }
+    func isInternetReachable() async -> Bool {
+        calls += 1
+        if calls == 1 { return false }
+        return await withCheckedContinuation { pending = $0 }
+    }
+    func recover() { pending?.resume(returning: true); pending = nil }
 }
 
 private actor RecoverableProbe: ConnectivityChecking {
@@ -63,6 +82,62 @@ private actor RecoverableProbe: ConnectivityChecking {
 
 @MainActor
 struct ConnectionRecoveryTests {
+    @Test func aSharedRecoveryResultAlwaysTriggersAFreshAddressCheck() async {
+        let domain = "IPStateSharedRecoveryTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: domain)!
+        defer { defaults.removePersistentDomain(forName: domain) }
+        let client = RecoverableLookup()
+        let probe = SharedRecoveryProbe()
+        let sleeper = TestSleeper()
+        let app = AppModel(client: client, preferences: Preferences(defaults: defaults),
+                           networkHealth: NetworkHealth(client: probe),
+                           sleep: { try await sleeper.sleep(for: $0) })
+        defer { app.stop() }
+        for _ in 0..<6 { await app.ipv4.refresh(); await app.ipv6.refresh() }
+        await Task(priority: .background) { app.refresh() }.value
+        #expect(await eventually {
+            let pending = await sleeper.pendingCount
+            return app.networkHealth.condition == .unreachable && pending >= 3
+        })
+        await sleeper.advance(by: .seconds(3))
+        #expect(await eventually { await probe.isWaiting })
+        let calls = await client.calls
+        await Task(priority: .userInitiated) { app.refresh() }.value
+        #expect(await eventually { (await client.calls) > calls && !app.ipv4.isRefreshing && !app.ipv6.isRefreshing })
+        await client.recover()
+        await probe.recover()
+        #expect(await eventually { app.ipv4.ip == "203.0.113.20" })
+        #expect(app.networkHealth.condition == .online)
+    }
+
+    @Test func addressPollingContinuesWithoutRestartingPendingLocation() async {
+        let domain = "IPStatePollingTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: domain)!
+        defer { defaults.removePersistentDomain(forName: domain) }
+        let preferences = Preferences(defaults: defaults)
+        let cache = IPLocationCache()
+        cache.store(IPLocation(countryCode: "NL", city: "Amsterdam"), for: "203.0.113.10")
+        let sleeper = TestSleeper()
+        let client = RecoveryLookup(family: .ipv4)
+        let app = AppModel(client: client, preferences: preferences, networkHealth: NetworkHealth(client: TestConnectivity()), locationCache: cache,
+                           sleep: { try await sleeper.sleep(for: $0) })
+        defer { app.stop() }
+        await app.ipv4.refresh()
+        var located: [String] = []
+        app.ipv4.onChangeWithLocation = { change, _ in located.append(change.newIP) }
+        await client.setIPv4("203.0.113.20")
+        app.refresh()
+        await client.waitForLocation()
+        #expect(await eventually { await sleeper.pendingCount > 0 })
+        await sleeper.advance(by: .seconds(5))
+        #expect(await eventually { await client.addressCalls >= 3 })
+        #expect(await client.locationCalls == 1)
+        #expect(located.isEmpty)
+        await client.completeLocation()
+        #expect(await eventually { app.ipv4.city == "Amsterdam" })
+        #expect(located == ["203.0.113.20"])
+    }
+
     @Test(arguments: IPFamily.allCases)
     func recoveredAddressClearsTheOutageBeforeLocationFinishes(family: IPFamily) async {
         let domain = "IPStateRecoveryTests.\(UUID().uuidString)"
@@ -86,7 +161,7 @@ struct ConnectionRecoveryTests {
         await client.waitForLocation()
         #expect(app.monitor.family == family)
         #expect(app.monitor.ip == (family == .ipv4 ? "203.0.113.10" : "2001:db8::10"))
-        #expect(app.monitor.isRefreshing)
+        #expect(!app.monitor.isRefreshing)
         #expect(health.condition == .online)
         #expect(changes == [.restored])
         await client.completeLocation()
@@ -103,28 +178,26 @@ struct ConnectionRecoveryTests {
         let health = NetworkHealth(client: probe)
         health.pathChanged(available: true)
         let client = RecoverableLookup()
-        let app = AppModel(client: client, preferences: preferences, networkHealth: health)
+        let sleeper = TestSleeper()
+        let app = AppModel(client: client, preferences: preferences, networkHealth: health,
+                           sleep: { try await sleeper.sleep(for: $0) })
         defer { app.stop() }
         for _ in 0..<6 { await app.ipv4.refresh(); await app.ipv6.refresh() }
         app.refresh()
-        let clock = ContinuousClock()
-        let initialDeadline = clock.now.advanced(by: .seconds(1))
-        while health.condition != .unreachable, clock.now < initialDeadline {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        #expect(await eventually { health.condition == .unreachable })
         try #require(health.condition == .unreachable)
+        #expect(await eventually { await sleeper.remainingDelays.contains(.seconds(3)) })
         preferences.interval = interval
         await client.recover()
         await probe.recover()
 
-        let deadline = clock.now.advanced(by: .seconds(6))
-        while health.condition != .online, clock.now < deadline {
-            try await Task.sleep(for: .milliseconds(10))
-        }
+        if interval == .off { #expect(await eventually { await sleeper.pendingCount == 0 }) }
+        await sleeper.advance(by: .seconds(3))
         if interval == .off {
             #expect(health.condition == .unreachable)
             #expect(app.ipv4.ip == nil)
         } else {
+            #expect(await eventually { health.condition == .online })
             #expect(health.condition == .online)
             #expect(app.ipv4.ip == "203.0.113.20")
         }

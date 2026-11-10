@@ -32,7 +32,7 @@ private actor GatedProbe: ConnectivityChecking {
         if continuation != nil { return }
         await withCheckedContinuation { waiter = $0 }
     }
-    func complete() { continuation?.resume(returning: true); continuation = nil }
+    func complete(reachable: Bool = true) { continuation?.resume(returning: reachable); continuation = nil }
 }
 
 @MainActor
@@ -105,7 +105,7 @@ struct NetworkHealthTests {
         #expect(await ConnectivityClient().isInternetReachable())
     }
 
-    @Test func cancelledProbeDoesNotBlockTheNextCheck() async {
+    @Test func cancellingAWaiterDoesNotDiscardAUsefulProbe() async {
         let monitor = IPMonitor(client: HealthLookup())
         await monitor.refresh()
         let probe = GatedProbe()
@@ -118,6 +118,41 @@ struct NetworkHealthTests {
         await pending.value
         await health.update(monitors: [monitor])
         #expect(health.condition == .lookupUnavailable)
-        #expect(await probe.calls == 2)
+        #expect(await probe.calls == 1)
+    }
+
+    @Test func replacementCheckWaitsForTheProbeWhileTheOldWaiterCancels() async {
+        let monitor = IPMonitor(client: HealthLookup())
+        await monitor.refresh()
+        let probe = GatedProbe()
+        let health = NetworkHealth(client: probe)
+        health.pathChanged(available: true)
+        let original = Task { await health.update(monitors: [monitor]) }
+        await probe.waitForStart()
+        original.cancel()
+        let replacement = Task { await health.update(monitors: [monitor]) }
+        await Task.yield()
+        await probe.complete(reachable: false)
+        await original.value
+        await replacement.value
+        #expect(health.condition == .unreachable)
+        #expect(await probe.calls == 1)
+    }
+
+    @Test func anOlderFailedProbeCannotReplaceASuccessfulLookup() async {
+        let monitor = IPMonitor(client: HealthLookup())
+        await monitor.refresh()
+        let probe = GatedProbe()
+        let health = NetworkHealth(client: probe)
+        var changes: [ConnectionChange] = []
+        health.onConnectionChange = { changes.append($0) }
+        health.pathChanged(available: true)
+        let pending = Task { await health.update(monitors: [monitor]) }
+        await probe.waitForStart()
+        health.lookupSucceeded()
+        await probe.complete(reachable: false)
+        await pending.value
+        #expect(health.condition == .online)
+        #expect(changes.isEmpty)
     }
 }

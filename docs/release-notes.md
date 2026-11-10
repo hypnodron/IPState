@@ -5,6 +5,8 @@ This preview includes automatic IPv4/IPv6 selection, configurable checks, connec
 Version 0.10.5 starts with a compact country flag and country code, with bounded optional names for new installations.
 Existing layouts, name limits, notification choices, and refresh intervals remain unchanged.
 Connection recovery clears the outage icon before location lookups finish and bypasses IP lookup backoff.
+Public IP checks now continue independently of location lookup, and VPN changes reset old retry delays.
+Manual refreshes share connectivity checks safely, including when periodic checks are Off.
 It also remembers recent IP locations across restarts, with automatic revalidation and expiry.
 
 Download the universal macOS ZIP for Apple silicon or Intel, extract it, and move **IP State.app** into Applications.

@@ -6,13 +6,15 @@ private actor CachedLookup: IPLookingUp {
     private let holdLocation: Bool
     private(set) var locationCalls = 0
     private var started: CheckedContinuation<Void, Never>?
-    private var result: CheckedContinuation<IPLocation, Never>?
+    private var result: CheckedContinuation<IPLocation, any Error>?
+    private var address = "203.0.113.10"
     init(holdLocation: Bool = false) { self.holdLocation = holdLocation }
-    func publicIPv4() async throws -> String { "203.0.113.10" }
+    func setIP(_ ip: String) { address = ip }
+    func publicIPv4() async throws -> String { address }
     func location(for ip: String) async throws -> IPLocation {
         locationCalls += 1
         if !holdLocation { return IPLocation(countryCode: "DK", city: "Copenhagen") }
-        return await withCheckedContinuation {
+        return try await withCheckedThrowingContinuation {
             result = $0
             started?.resume()
             started = nil
@@ -22,14 +24,37 @@ private actor CachedLookup: IPLookingUp {
         if result != nil { return }
         await withCheckedContinuation { started = $0 }
     }
-    func completeLocation() {
-        result?.resume(returning: IPLocation(countryCode: "DK", city: "Copenhagen"))
+    func completeLocation(failing: Bool = false) {
+        if failing { result?.resume(throwing: URLError(.timedOut)) }
+        else { result?.resume(returning: IPLocation(countryCode: "DK", city: "Copenhagen")) }
         result = nil
     }
 }
 
 @MainActor
 struct LocationCacheTests {
+    @Test func failedRevalidationKeepsTheExactIPsCachedLocationForItsAlert() async {
+        var now = Date()
+        let cache = IPLocationCache(now: { now })
+        cache.store(IPLocation(countryCode: "NL", city: "Amsterdam"), for: "203.0.113.10")
+        cache.store(IPLocation(countryCode: "DK", city: "Copenhagen"), for: "203.0.113.20")
+        let client = CachedLookup(holdLocation: true)
+        let monitor = IPMonitor(client: client, locationCache: cache)
+        await monitor.refresh()
+        now = now.addingTimeInterval(2 * 24 * 60 * 60)
+        var locations: [IPLocation?] = []
+        monitor.onChangeWithLocation = { _, location in locations.append(location) }
+        await client.setIP("203.0.113.20")
+        let change = Task { await monitor.refresh() }
+        await client.waitForLocation()
+        #expect(monitor.city == "Copenhagen")
+        await client.completeLocation(failing: true)
+        await change.value
+        #expect(monitor.city == "Copenhagen")
+        #expect(monitor.lastLocationError != nil)
+        #expect(locations == [IPLocation(countryCode: "DK", city: "Copenhagen")])
+    }
+
     @Test func aKnownIPUsesCachedLocationWithoutAnotherProviderRequest() async {
         let cache = IPLocationCache()
         cache.store(IPLocation(countryCode: "NL", city: "Amsterdam"), for: "203.0.113.10")

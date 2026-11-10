@@ -75,27 +75,30 @@ public final class NetworkHealth {
     @ObservationIgnored private var pathAvailable: Bool?
     @ObservationIgnored private var epoch = Date()
     @ObservationIgnored private var generation = 0
-    @ObservationIgnored private var isProbing = false
+    @ObservationIgnored private var probeTask: Task<Bool, Never>?
     @ObservationIgnored private var lastProbe: Date?
 
     public init(client: any ConnectivityChecking = ConnectivityClient()) { self.client = client }
 
     public func resetConnectionBaseline() { connectionWasReachable = nil }
 
+    public func cancelPendingCheck() {
+        generation += 1
+        probeTask?.cancel()
+        probeTask = nil
+        lastProbe = nil
+    }
+
     public func lookupSucceeded() {
         guard pathAvailable != false else { return }
-        generation += 1
-        isProbing = false
-        lastProbe = nil
+        cancelPendingCheck()
         condition = .online
     }
 
     public func pathChanged(available: Bool) {
-        generation += 1
+        cancelPendingCheck()
         pathAvailable = available
         epoch = Date()
-        lastProbe = nil
-        isProbing = false
         condition = available ? .checking : .offline
     }
 
@@ -105,27 +108,31 @@ public final class NetworkHealth {
             lookupSucceeded()
             return
         }
-        guard !monitors.contains(where: \.isRefreshing), !isProbing else { return }
+        guard !monitors.contains(where: \.isRefreshing) else { return }
+        if let probeTask { _ = await probeTask.value; return }
         if let lastProbe, Date().timeIntervalSince(lastProbe) < 30 { return }
         _ = await probe()
     }
 
     public func checkRecovery() async -> Bool {
-        guard condition == .unreachable, pathAvailable != false, !isProbing, !Task.isCancelled else { return false }
+        guard condition == .unreachable, pathAvailable != false, !Task.isCancelled else { return false }
         return await probe()
     }
 
     private func probe() async -> Bool {
+        if let probeTask { return await probeTask.value }
         let request = generation
-        isProbing = true
         lastProbe = Date()
-        defer { if request == generation { isProbing = false } }
-        let reachable = await client.isInternetReachable()
-        guard request == generation, !Task.isCancelled, pathAvailable != false else {
-            if request == generation { lastProbe = nil }
-            return false
+        // The health check outlives any one refresh waiter; replacements share its result.
+        let task = Task { [weak self, client] in
+            let reachable = await client.isInternetReachable()
+            guard let self else { return false }
+            defer { if request == generation { probeTask = nil } }
+            guard request == generation, !Task.isCancelled, pathAvailable != false else { return false }
+            condition = reachable ? .lookupUnavailable : .unreachable
+            return reachable
         }
-        condition = reachable ? .lookupUnavailable : .unreachable
-        return reachable
+        probeTask = task
+        return await task.value
     }
 }

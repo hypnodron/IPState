@@ -79,8 +79,66 @@ private actor GatedLookup: IPLookingUp {
     func complete(_ index: Int, with ip: String) { requests[index].resume(returning: ip) }
 }
 
+private actor SupersedingLookup: IPLookingUp {
+    private var addresses: [CheckedContinuation<String, Never>] = []
+    private var location: CheckedContinuation<IPLocation, Never>?
+    private(set) var addressCount = 0
+    var isLocating: Bool { location != nil }
+    func publicIPv4() async throws -> String {
+        addressCount += 1
+        return await withCheckedContinuation { addresses.append($0) }
+    }
+    func location(for ip: String) async throws -> IPLocation {
+        await withCheckedContinuation { location = $0 }
+    }
+    func completeAddress(_ index: Int, ip: String) { addresses[index].resume(returning: ip) }
+    func completeLocation() { location?.resume(returning: IPLocation(countryCode: "NL", city: "Amsterdam")); location = nil }
+}
+
 @MainActor
 struct MonitorTests {
+    @Test func anObsoleteCancelledRefreshCannotCancelTheNewIPsLocation() async throws {
+        let client = SupersedingLookup()
+        let monitor = IPMonitor(client: client)
+        var firstFinished = false
+        let first = Task { await monitor.refresh(); firstFinished = true }
+        try #require(await waitUntil { await client.addressCount >= 1 })
+        first.cancel()
+        let second = Task { await monitor.refresh() }
+        try #require(await waitUntil { await client.addressCount >= 2 })
+        await client.completeAddress(1, ip: "203.0.113.20")
+        try #require(await waitUntil { await client.isLocating })
+        await client.completeAddress(0, ip: "203.0.113.10")
+        #expect(await waitUntil { firstFinished })
+        await client.completeLocation()
+        await first.value
+        await second.value
+        #expect(monitor.ip == "203.0.113.20")
+        #expect(monitor.city == "Amsterdam")
+    }
+
+    private func waitUntil(_ condition: @MainActor () async -> Bool) async -> Bool {
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while ContinuousClock.now < deadline {
+            if await condition() { return true }
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+        return await condition()
+    }
+
+    @Test(arguments: [false, true])
+    func aNewNetworkPathResetsFailureBackoff(disconnectedFirst: Bool) async {
+        let client = LookupFixture()
+        await client.configure(failsIP: true)
+        let monitor = IPMonitor(client: client)
+        for _ in 0..<8 { await monitor.refresh() }
+        #expect(RefreshInterval.fiveSeconds.delay(afterFailures: monitor.failureCount) == 300)
+        if disconnectedFirst { monitor.setOffline(true) }
+        monitor.setOffline(false)
+        await monitor.refresh()
+        #expect(RefreshInterval.fiveSeconds.delay(afterFailures: monitor.failureCount) == 5)
+    }
+
     @Test func firstResultEstablishesBaselineWithoutNotification() async {
         let monitor = IPMonitor(client: LookupFixture())
         var changes: [IPChange] = []
