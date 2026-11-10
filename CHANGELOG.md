@@ -10,6 +10,7 @@
 - Reset retry backoff after network changes and wake so a new VPN path receives prompt checks.
 - Share connectivity probes across refreshes without losing results when a waiter cancels.
 - Cancel queued IP alerts when their switch is disabled, and avoid permission requests from canceled test alerts.
+- Keep muted or canceled IP changes silent when alerts are re-enabled before location lookup finishes.
 
 ## 0.10.4 — Faster recovery and remembered locations
 

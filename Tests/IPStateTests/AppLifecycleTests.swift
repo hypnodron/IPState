@@ -132,6 +132,47 @@ struct AppLifecycleTests {
         #expect(center.requests.isEmpty)
     }
 
+    @Test(arguments: [false, true])
+    func enablingIPAlertsDoesNotReviveChangesWaitingForLocation(alertsEnabledAtDetection: Bool) async throws {
+        let domain = "IPStatePendingAlertTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: domain)!
+        defer { defaults.removePersistentDomain(forName: domain) }
+        let preferences = Preferences(defaults: defaults)
+        preferences.interval = .off
+        preferences.notifyChanges = alertsEnabledAtDetection
+        let history = IPHistory(defaults: defaults)
+        history.isEnabled = true
+        let cache = IPLocationCache()
+        let center = TestNotificationCenter()
+        let lifecycle = TestLifecycle()
+        let client = AppLookup()
+        let app = AppModel(client: client, preferences: preferences, networkHealth: NetworkHealth(client: TestConnectivity()),
+                           locationCache: cache, history: history,
+                           notifications: NotificationService(center: center), lifecycle: lifecycle)
+        defer { app.stop() }
+        app.start()
+        try #require(await eventually { app.ipv4.city == "Amsterdam" })
+
+        await client.setIP("203.0.113.20", blockLocation: true)
+        lifecycle.networkChanged(true)
+        try #require(await eventually { await client.isLocating("203.0.113.20") })
+        #expect(history.entries.count == 1)
+        #expect(center.requests.isEmpty)
+        if alertsEnabledAtDetection { app.notificationsEnabled = false }
+        app.notificationsEnabled = true
+        await client.completeLocation(for: "203.0.113.20")
+        try #require(await eventually { app.ipv4.city == "Amsterdam" })
+        #expect(cache.location(for: "203.0.113.20")?.city == "Amsterdam")
+
+        await client.setIP("203.0.113.30")
+        lifecycle.networkChanged(true)
+        try #require(await eventually {
+            center.requests.contains { $0.content.body == "203.0.113.30\nPrevious: 203.0.113.20" }
+        })
+        #expect(center.requests.map { $0.content.body } == ["203.0.113.30\nPrevious: 203.0.113.20"])
+        #expect(history.entries.count == 2)
+    }
+
     @Test func disablingIPAlertsCancelsAnAlertWaitingForAuthorization() async throws {
         let domain = "IPStateAlertToggleTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!

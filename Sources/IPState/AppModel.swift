@@ -21,6 +21,7 @@ final class AppModel {
     @ObservationIgnored private var recoveryTask: Task<Void, Never>?
     @ObservationIgnored private var connectionNotificationTask: Task<Void, Never>?
     @ObservationIgnored private var ipNotificationTask: Task<Void, Never>?
+    @ObservationIgnored private var pendingIPAlerts: [IPFamily: IPChange] = [:]
     @ObservationIgnored private var isAsleep = false
     @ObservationIgnored private var hasStarted = false
     @ObservationIgnored private var isRunning = false
@@ -109,6 +110,8 @@ final class AppModel {
             addressMonitor(for: family).onChange = { [weak self] change in
                 guard let self, isRunning else { return }
                 history.record(change)
+                // Capture eligibility before location enrichment can outlive the alert setting.
+                pendingIPAlerts[change.family] = preferences.notifyChanges ? change : nil
             }
             addressMonitor(for: family).onChangeWithLocation = { [weak self] change, location in
                 guard let self, isRunning else { return }
@@ -200,6 +203,8 @@ final class AppModel {
     }
 
     private func notifyIPChange(_ change: IPChange, location: IPLocation?) {
+        guard pendingIPAlerts[change.family] == change else { return }
+        pendingIPAlerts[change.family] = nil
         guard preferences.notifyChanges, isRunning else { return }
         let previous = ipNotificationTask
         ipNotificationTask = Task { [weak self] in
@@ -214,6 +219,7 @@ final class AppModel {
     }
 
     private func cancelIPNotifications() {
+        pendingIPAlerts.removeAll()
         ipNotificationTask?.cancel()
         ipNotificationTask = nil
     }

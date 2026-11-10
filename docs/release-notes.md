@@ -7,6 +7,7 @@ Existing layouts, name limits, notification choices, and refresh intervals remai
 Connection recovery clears the outage icon before location lookups finish and bypasses IP lookup backoff.
 Public IP checks now continue independently of location lookup, and VPN changes reset old retry delays.
 Manual refreshes share connectivity checks safely, including when periodic checks are Off.
+Re-enabling IP alerts keeps earlier muted or canceled changes silent, even when their location lookup finishes later.
 It also remembers recent IP locations across restarts, with automatic revalidation and expiry.
 
 Download the universal macOS ZIP for Apple silicon or Intel, extract it, and move **IP State.app** into Applications.

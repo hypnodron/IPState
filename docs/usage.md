@@ -25,6 +25,7 @@ The menu bar and history update as soon as an IP change is detected.
 The notification waits for that IP's location lookup, then includes its location or an explicit unavailable message.
 Failed, cancelled, or superseded location lookups still produce one alert for a detected change without reusing another IP's location.
 Disabling IP alerts or quitting cancels pending IP alert delivery.
+Re-enabling alerts applies only to future changes, including when earlier location lookups remain pending.
 Equivalent IPv6 address spellings do not produce false change notifications.
 macOS notification permission and Focus settings control visible banners.
 
