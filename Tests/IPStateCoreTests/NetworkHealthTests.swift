@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import IPStateTestSupport
 @testable import IPStateCore
 
 private actor HealthLookup: IPLookingUp {
@@ -22,17 +23,16 @@ private actor Probe: ConnectivityChecking {
 private actor GatedProbe: ConnectivityChecking {
     private(set) var calls = 0
     var continuation: CheckedContinuation<Bool, Never>?
-    var waiter: CheckedContinuation<Void, Never>?
+    var isWaiting: Bool { continuation != nil }
+    private var closed = false
     func isInternetReachable() async -> Bool {
+        guard !closed else { return false }
         calls += 1
         if calls > 1 { return true }
-        return await withCheckedContinuation { continuation = $0; waiter?.resume(); waiter = nil }
-    }
-    func waitForStart() async {
-        if continuation != nil { return }
-        await withCheckedContinuation { waiter = $0 }
+        return await withCheckedContinuation { continuation = $0 }
     }
     func complete(reachable: Bool = true) { continuation?.resume(returning: reachable); continuation = nil }
+    func releasePending() { closed = true; complete(reachable: false) }
 }
 
 @MainActor
@@ -86,17 +86,20 @@ struct NetworkHealthTests {
         #expect(await probe.calls == 1)
     }
 
-    @Test func aLateProbeCannotReplaceTheOfflineState() async {
+    @Test func aLateProbeCannotReplaceTheOfflineState() async throws {
         let monitor = IPMonitor(client: HealthLookup())
         await monitor.refresh()
         let probe = GatedProbe()
+        defer { Task { await probe.releasePending() } }
         let health = NetworkHealth(client: probe)
+        defer { health.cancelPendingCheck() }
         health.pathChanged(available: true)
         let pending = Task { await health.update(monitors: [monitor]) }
-        await probe.waitForStart()
+        defer { pending.cancel() }
+        try #require(await eventually { await probe.isWaiting })
         health.pathChanged(available: false)
         await probe.complete()
-        await pending.value
+        try #require(await taskCompletes(pending))
         #expect(health.condition == .offline)
     }
 
@@ -105,53 +108,63 @@ struct NetworkHealthTests {
         #expect(await ConnectivityClient().isInternetReachable())
     }
 
-    @Test func cancellingAWaiterDoesNotDiscardAUsefulProbe() async {
+    @Test func cancellingAWaiterDoesNotDiscardAUsefulProbe() async throws {
         let monitor = IPMonitor(client: HealthLookup())
         await monitor.refresh()
         let probe = GatedProbe()
+        defer { Task { await probe.releasePending() } }
         let health = NetworkHealth(client: probe)
+        defer { health.cancelPendingCheck() }
         health.pathChanged(available: true)
         let pending = Task { await health.update(monitors: [monitor]) }
-        await probe.waitForStart()
+        defer { pending.cancel() }
+        try #require(await eventually { await probe.isWaiting })
         pending.cancel()
         await probe.complete()
-        await pending.value
+        try #require(await taskCompletes(pending))
         await health.update(monitors: [monitor])
         #expect(health.condition == .lookupUnavailable)
         #expect(await probe.calls == 1)
     }
 
-    @Test func replacementCheckWaitsForTheProbeWhileTheOldWaiterCancels() async {
+    @Test func replacementCheckWaitsForTheProbeWhileTheOldWaiterCancels() async throws {
         let monitor = IPMonitor(client: HealthLookup())
         await monitor.refresh()
         let probe = GatedProbe()
+        defer { Task { await probe.releasePending() } }
         let health = NetworkHealth(client: probe)
+        defer { health.cancelPendingCheck() }
         health.pathChanged(available: true)
         let original = Task { await health.update(monitors: [monitor]) }
-        await probe.waitForStart()
+        defer { original.cancel() }
+        try #require(await eventually { await probe.isWaiting })
         original.cancel()
         let replacement = Task { await health.update(monitors: [monitor]) }
+        defer { replacement.cancel() }
         await Task.yield()
         await probe.complete(reachable: false)
-        await original.value
-        await replacement.value
+        try #require(await taskCompletes(original))
+        try #require(await taskCompletes(replacement))
         #expect(health.condition == .unreachable)
         #expect(await probe.calls == 1)
     }
 
-    @Test func anOlderFailedProbeCannotReplaceASuccessfulLookup() async {
+    @Test func anOlderFailedProbeCannotReplaceASuccessfulLookup() async throws {
         let monitor = IPMonitor(client: HealthLookup())
         await monitor.refresh()
         let probe = GatedProbe()
+        defer { Task { await probe.releasePending() } }
         let health = NetworkHealth(client: probe)
+        defer { health.cancelPendingCheck() }
         var changes: [ConnectionChange] = []
         health.onConnectionChange = { changes.append($0) }
         health.pathChanged(available: true)
         let pending = Task { await health.update(monitors: [monitor]) }
-        await probe.waitForStart()
+        defer { pending.cancel() }
+        try #require(await eventually { await probe.isWaiting })
         health.lookupSucceeded()
         await probe.complete(reachable: false)
-        await pending.value
+        try #require(await taskCompletes(pending))
         #expect(health.condition == .online)
         #expect(changes.isEmpty)
     }

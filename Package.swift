@@ -11,7 +11,8 @@ let package = Package(
     targets: [
         .target(name: "IPStateCore"),
         .executableTarget(name: "IPState", dependencies: ["IPStateCore"]),
-        .testTarget(name: "IPStateCoreTests", dependencies: ["IPStateCore"]),
-        .testTarget(name: "IPStateTests", dependencies: ["IPState", "IPStateCore"])
+        .target(name: "IPStateTestSupport", path: "Tests/IPStateTestSupport"),
+        .testTarget(name: "IPStateCoreTests", dependencies: ["IPStateCore", "IPStateTestSupport"]),
+        .testTarget(name: "IPStateTests", dependencies: ["IPState", "IPStateCore", "IPStateTestSupport"])
     ]
 )

@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import IPStateTestSupport
 import IPStateCore
 @testable import IPState
 

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import IPStateTestSupport
 @testable import IPStateCore
 
 private actor LookupFixture: IPLookingUp {
@@ -11,7 +12,7 @@ private actor LookupFixture: IPLookingUp {
     var failsCountry = false
     var blockCountry = false
     private var countryContinuation: CheckedContinuation<String?, Never>?
-    private var countryWaiter: CheckedContinuation<Void, Never>?
+    var isWaitingForCountry: Bool { countryContinuation != nil }
 
     func configure(ip: String? = nil, failsIP: Bool = false, failsCountry: Bool = false) {
         if let ip { self.ip = ip }
@@ -38,18 +39,12 @@ private actor LookupFixture: IPLookingUp {
         if blockCountry {
             return await withCheckedContinuation {
                 countryContinuation = $0
-                countryWaiter?.resume()
-                countryWaiter = nil
             }
         }
         return country
     }
 
     func blockNextCountry() { blockCountry = true }
-    func waitForCountryRequest() async {
-        if countryContinuation != nil { return }
-        await withCheckedContinuation { countryWaiter = $0 }
-    }
     func releaseCountry() {
         blockCountry = false
         countryContinuation?.resume(returning: country)
@@ -58,72 +53,74 @@ private actor LookupFixture: IPLookingUp {
 }
 
 private actor GatedLookup: IPLookingUp {
-    private var requests: [CheckedContinuation<String, any Error>] = []
-    private var waiters: [Int: CheckedContinuation<Void, Never>] = [:]
+    private var requests: [CheckedContinuation<String, any Error>?] = []
+    private var closed = false
+    var requestCount: Int { requests.count }
 
     func publicIPv4() async throws -> String {
-        try await withCheckedThrowingContinuation { continuation in
-            let index = requests.count
-            requests.append(continuation)
-            waiters.removeValue(forKey: index)?.resume()
-        }
+        guard !closed else { throw CancellationError() }
+        return try await withCheckedThrowingContinuation { requests.append($0) }
     }
 
     func location(for ip: String) async throws -> IPLocation { IPLocation(countryCode: "NL", city: nil) }
 
-    func waitForRequest(_ index: Int) async {
-        if requests.count > index { return }
-        await withCheckedContinuation { waiters[index] = $0 }
+    func complete(_ index: Int, with ip: String) {
+        requests[index]?.resume(returning: ip)
+        requests[index] = nil
     }
-
-    func complete(_ index: Int, with ip: String) { requests[index].resume(returning: ip) }
+    func releasePending() {
+        closed = true
+        for index in requests.indices { requests[index]?.resume(throwing: CancellationError()); requests[index] = nil }
+    }
 }
 
 private actor SupersedingLookup: IPLookingUp {
-    private var addresses: [CheckedContinuation<String, Never>] = []
+    private var addresses: [CheckedContinuation<String, Never>?] = []
     private var location: CheckedContinuation<IPLocation, Never>?
+    private var closed = false
     private(set) var addressCount = 0
     var isLocating: Bool { location != nil }
     func publicIPv4() async throws -> String {
+        guard !closed else { throw CancellationError() }
         addressCount += 1
         return await withCheckedContinuation { addresses.append($0) }
     }
     func location(for ip: String) async throws -> IPLocation {
-        await withCheckedContinuation { location = $0 }
+        guard !closed else { throw CancellationError() }
+        return await withCheckedContinuation { location = $0 }
     }
-    func completeAddress(_ index: Int, ip: String) { addresses[index].resume(returning: ip) }
+    func completeAddress(_ index: Int, ip: String) { addresses[index]?.resume(returning: ip); addresses[index] = nil }
     func completeLocation() { location?.resume(returning: IPLocation(countryCode: "NL", city: "Amsterdam")); location = nil }
+    func releasePending() {
+        closed = true
+        for index in addresses.indices { completeAddress(index, ip: "") }
+        completeLocation()
+    }
 }
 
 @MainActor
 struct MonitorTests {
     @Test func anObsoleteCancelledRefreshCannotCancelTheNewIPsLocation() async throws {
         let client = SupersedingLookup()
+        defer { Task { await client.releasePending() } }
         let monitor = IPMonitor(client: client)
         var firstFinished = false
         let first = Task { await monitor.refresh(); firstFinished = true }
-        try #require(await waitUntil { await client.addressCount >= 1 })
+        defer { first.cancel() }
+        try #require(await eventually { await client.addressCount >= 1 })
         first.cancel()
         let second = Task { await monitor.refresh() }
-        try #require(await waitUntil { await client.addressCount >= 2 })
+        defer { second.cancel() }
+        try #require(await eventually { await client.addressCount >= 2 })
         await client.completeAddress(1, ip: "203.0.113.20")
-        try #require(await waitUntil { await client.isLocating })
+        try #require(await eventually { await client.isLocating })
         await client.completeAddress(0, ip: "203.0.113.10")
-        #expect(await waitUntil { firstFinished })
+        #expect(await eventually { firstFinished })
         await client.completeLocation()
-        await first.value
-        await second.value
+        try #require(await taskCompletes(first))
+        try #require(await taskCompletes(second))
         #expect(monitor.ip == "203.0.113.20")
         #expect(monitor.city == "Amsterdam")
-    }
-
-    private func waitUntil(_ condition: @MainActor () async -> Bool) async -> Bool {
-        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
-        while ContinuousClock.now < deadline {
-            if await condition() { return true }
-            try? await Task.sleep(for: .milliseconds(5))
-        }
-        return await condition()
     }
 
     @Test(arguments: [false, true])
@@ -260,41 +257,47 @@ struct MonitorTests {
         #expect(MenuBarLayout(enabled: [.countryCode]).title(ip: nil, countryCode: nil, stale: true) == "—")
     }
 
-    @Test func lateResponseCannotReplaceANewerResult() async {
+    @Test func lateResponseCannotReplaceANewerResult() async throws {
         let client = GatedLookup()
+        defer { Task { await client.releasePending() } }
         let monitor = IPMonitor(client: client)
         var changes: [IPChange] = []
         monitor.onChange = { changes.append($0) }
         let old = Task { await monitor.refresh() }
-        await client.waitForRequest(0)
+        defer { old.cancel() }
+        try #require(await eventually { await client.requestCount >= 1 })
         monitor.cancelRefresh()
         let current = Task { await monitor.refresh() }
-        await client.waitForRequest(1)
+        defer { current.cancel() }
+        try #require(await eventually { await client.requestCount >= 2 })
         await client.complete(1, with: "203.0.113.22")
-        await current.value
+        try #require(await taskCompletes(current))
         await client.complete(0, with: "203.0.113.21")
-        await old.value
+        try #require(await taskCompletes(old))
         #expect(monitor.ip == "203.0.113.22")
         #expect(!monitor.isStale)
         #expect(changes.isEmpty)
     }
 
-    @Test func offlineInvalidatesAnInFlightRequest() async {
+    @Test func offlineInvalidatesAnInFlightRequest() async throws {
         let client = GatedLookup()
+        defer { Task { await client.releasePending() } }
         let monitor = IPMonitor(client: client)
         let pending = Task { await monitor.refresh() }
-        await client.waitForRequest(0)
+        defer { pending.cancel() }
+        try #require(await eventually { await client.requestCount >= 1 })
         monitor.setOffline(true)
         await client.complete(0, with: "203.0.113.23")
-        await pending.value
+        try #require(await taskCompletes(pending))
         #expect(monitor.ip == nil)
         #expect(monitor.isOffline)
         #expect(monitor.isStale)
         #expect(!monitor.isRefreshing)
     }
 
-    @Test func IPUpdateAndChangeDetectionAreImmediateWhileNotificationWaitsForLocation() async {
+    @Test func IPUpdateAndChangeDetectionAreImmediateWhileNotificationWaitsForLocation() async throws {
         let client = LookupFixture()
+        defer { Task { await client.releaseCountry() } }
         let monitor = IPMonitor(client: client)
         var changes: [IPChange] = []
         monitor.onChange = { changes.append($0) }
@@ -306,14 +309,15 @@ struct MonitorTests {
         await client.setCity("Copenhagen")
         await client.blockNextCountry()
         let pending = Task { await monitor.refresh() }
-        await client.waitForCountryRequest()
+        defer { pending.cancel() }
+        try #require(await eventually { await client.isWaitingForCountry })
         #expect(monitor.ip == "203.0.113.24")
         #expect(changes.count == 1)
         #expect(monitor.countryCode == nil)
         #expect(!monitor.isStale)
         #expect(located.isEmpty)
         await client.releaseCountry()
-        await pending.value
+        try #require(await taskCompletes(pending))
         #expect(monitor.countryCode == "DK")
         #expect(located == [IPLocation(countryCode: "DK", city: "Copenhagen")])
     }
@@ -333,8 +337,9 @@ struct MonitorTests {
         #expect(locations == [IPLocation(countryCode: "DK", city: "Copenhagen"), IPLocation(countryCode: "NL", city: "Amsterdam")])
     }
 
-    @Test func cancellingLocationLookupSendsOneFallbackWithoutAnOldLocation() async {
+    @Test func cancellingLocationLookupSendsOneFallbackWithoutAnOldLocation() async throws {
         let client = LookupFixture()
+        defer { Task { await client.releaseCountry() } }
         let monitor = IPMonitor(client: client)
         var addresses: [String] = []
         var locations: [IPLocation?] = []
@@ -343,19 +348,21 @@ struct MonitorTests {
         await client.configure(ip: "203.0.113.32")
         await client.blockNextCountry()
         let pending = Task { await monitor.refresh() }
-        await client.waitForCountryRequest()
+        defer { pending.cancel() }
+        try #require(await eventually { await client.isWaitingForCountry })
         pending.cancel()
         monitor.cancelRefresh(markStale: true)
         #expect(addresses == ["203.0.113.32"])
         #expect(locations == [nil])
         await client.releaseCountry()
-        await pending.value
+        try #require(await taskCompletes(pending))
         await monitor.refresh()
         #expect(addresses == ["203.0.113.32"])
     }
 
-    @Test func supersedingAnIPCannotAttachItsLateLocationToAnotherNotification() async {
+    @Test func supersedingAnIPCannotAttachItsLateLocationToAnotherNotification() async throws {
         let client = LookupFixture()
+        defer { Task { await client.releaseCountry() } }
         let monitor = IPMonitor(client: client)
         var addresses: [String] = []
         var locations: [IPLocation?] = []
@@ -364,7 +371,8 @@ struct MonitorTests {
         await client.configure(ip: "203.0.113.33")
         await client.blockNextCountry()
         let pending = Task { await monitor.refresh() }
-        await client.waitForCountryRequest()
+        defer { pending.cancel() }
+        try #require(await eventually { await client.isWaitingForCountry })
         await client.allowCountryRequests()
         await client.configure(ip: "203.0.113.34")
         await client.setCountry("DK")
@@ -373,7 +381,7 @@ struct MonitorTests {
         #expect(addresses == ["203.0.113.33", "203.0.113.34"])
         #expect(locations == [nil, IPLocation(countryCode: "DK", city: "Copenhagen")])
         await client.releaseCountry()
-        await pending.value
+        try #require(await taskCompletes(pending))
         #expect(addresses == ["203.0.113.33", "203.0.113.34"])
         #expect(monitor.ip == "203.0.113.34")
         #expect(monitor.city == "Copenhagen")

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import IPStateTestSupport
 import UserNotifications
 import IPStateCore
 @testable import IPState
@@ -58,16 +59,17 @@ struct NotificationServiceTests {
         #expect(center.requests.first?.content.body == "203.0.113.20\nPrevious: 203.0.113.10")
     }
 
-    @Test func cancellingATestAlertDoesNotReportAnUnsentNotificationAsSent() async {
+    @Test func cancellingATestAlertDoesNotReportAnUnsentNotificationAsSent() async throws {
         let center = TestNotificationCenter()
         center.status = .notDetermined
         center.pauseStatus = true
         let service = NotificationService(center: center)
         let pending = Task { await service.sendTest(IPNotificationInfo(ip: nil, family: .ipv4, location: nil)) }
-        #expect(await eventually { center.statusWaiting })
+        defer { pending.cancel(); center.pauseStatus = false; center.resumeStatus() }
+        try #require(await eventually { center.statusWaiting })
         pending.cancel()
         center.resumeStatus()
-        await pending.value
+        try #require(await taskCompletes(pending))
         #expect(center.requests.isEmpty)
         #expect(center.authorizationRequests == 0)
         #expect(service.testResult == nil)
