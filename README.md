@@ -29,7 +29,7 @@ Get a notification when your public IP changes.
 
 ## Install
 
-Download the universal macOS ZIP from [Releases](https://github.com/hypnodron/IPState/releases) when available.
+Download the universal macOS ZIP from [Releases](https://github.com/hypnodron/IPState/releases).
 Extract it, move **IP State.app** into Applications, and open it.
 The app lives in the menu bar and has no Dock icon. Click its menu bar item, then choose **Settings…**.
 
