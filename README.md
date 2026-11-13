@@ -22,7 +22,7 @@ Get a notification when your public IP changes.
 - Remember recent IP locations across restarts, with automatic refresh and expiry.
 
 <p align="center">
-  <img src="docs/images/settings.png" width="560" alt="IP State settings with configurable menu bar items, checks, notifications, and history">
+  <img src="docs/images/settings.png" width="672" alt="IP State settings with configurable menu bar items, checks, notifications, and history">
 </p>
 
 *Settings preview uses illustrative location data and example IP addresses.*
