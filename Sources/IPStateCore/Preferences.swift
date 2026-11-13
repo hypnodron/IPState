@@ -61,13 +61,12 @@ public final class Preferences {
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        let hadLayout = defaults.object(forKey: "menuBarLayout") != nil || defaults.object(forKey: "displayMode") != nil
         cityCodes = defaults.dictionary(forKey: "cityCodes") as? [String: String] ?? [:]
         interval = (defaults.object(forKey: "refreshInterval") as? Int).flatMap(RefreshInterval.init(rawValue:)) ?? .fiveSeconds
         menuBarLayout = defaults.dictionary(forKey: "menuBarLayout").flatMap(MenuBarLayout.init(storedValue:))
-            ?? .migrated(from: defaults.string(forKey: "displayMode"))
-        cityLimit = min(max(defaults.object(forKey: "cityCharacterLimit") as? Int ?? (hadLayout ? 0 : 16), 0), 80)
-        countryLimit = min(max(defaults.object(forKey: "countryCharacterLimit") as? Int ?? (hadLayout ? 0 : 20), 0), 80)
+            ?? MenuBarLayout()
+        cityLimit = min(max(defaults.object(forKey: "cityCharacterLimit") as? Int ?? 16, 0), 80)
+        countryLimit = min(max(defaults.object(forKey: "countryCharacterLimit") as? Int ?? 20, 0), 80)
         notifyChanges = defaults.object(forKey: "notifyChanges") as? Bool ?? true
         notifyConnectionChanges = defaults.bool(forKey: "notifyConnectionChanges")
         // Save the initial limits before the layout marks this profile as existing.

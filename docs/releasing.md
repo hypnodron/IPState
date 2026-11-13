@@ -17,7 +17,7 @@ The archive name contains the version from `Support/Info.plist`.
 Verify an archive's checksum from its directory:
 
 ```sh
-shasum -a 256 -c IPState-0.10.5-universal-macos.zip.sha256
+shasum -a 256 -c IPState-0.10.6-universal-macos.zip.sha256
 ```
 
 Before distributing a new build, extract it and check the signature, launch, settings, and icon in Finder.
@@ -42,7 +42,9 @@ The artifact contains the ZIP and checksum, which preserve executable permission
 
 `release.yml` runs after a `v*` tag push. It rejects a tag that does not match `CFBundleShortVersionString`.
 After tests and packaging, it creates a **draft** GitHub release with the ZIP and checksum.
+It runs only for newly created tags and skips versions that already have a draft or published release.
 It does not publish the draft automatically. Review the notes and artifacts before publishing.
+To retry a version with an incomplete draft, delete that draft before rerunning its release job.
 The workflow requires `contents: write` only for its release job.
 
 For each release:
@@ -51,7 +53,7 @@ For each release:
 2. Update `CHANGELOG.md` and `docs/release-notes.md`.
 3. Run the local checks and review the extracted app.
 4. Commit the release changes.
-5. Create and push the matching tag, such as `v0.10.5`.
+5. Create and push the matching tag, such as `v0.10.6`.
 6. Review the workflow result and draft release.
 7. Publish the draft when its notes, signing status, and assets are correct.
 

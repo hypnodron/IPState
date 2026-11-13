@@ -33,9 +33,9 @@ Users who prefer fewer background requests can select a longer interval without 
 [Apple recommends minimizing background network activity](https://developer.apple.com/documentation/xcode/reducing-networking-and-bluetooth-power-usage).
 [ipify documents unrestricted address requests](https://www.ipify.org/); fallback providers can have different availability and limits.
 
-## Existing installations
+## Saved settings
 
-Saved layouts, notification switches, refresh intervals, and explicit name limits remain unchanged, including zero for unlimited names.
-Existing layouts without saved name limits retain their previous unlimited behavior.
-New-install name limits are saved at initialization so they remain consistent across subsequent launches.
-The update does not enable login startup or change the user's current macOS preferences.
+Saved layouts, notification switches, refresh intervals, and explicit name limits are restored across launches, including zero for unlimited names.
+Missing name limits use the current defaults. Initial limits are saved so they remain consistent across subsequent launches.
+The current app identity starts with fresh settings and does not import settings from earlier identities.
+Notification permission and Start at login may need to be enabled again after installing this build.

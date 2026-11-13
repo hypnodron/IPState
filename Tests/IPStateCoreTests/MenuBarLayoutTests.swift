@@ -34,22 +34,6 @@ struct MenuBarLayoutTests {
         #expect(layout.title(ip: "203.0.113.10", countryCode: "NL", stale: false, country: "Netherlands", city: "Amsterdam") == "Netherlands Amsterdam")
     }
 
-    @Test func oldDisplayModesMigrateWithoutChangingVisibleContent() {
-        let fixtures = [
-            ("ip", "203.0.113.10"), ("flag", "🇳🇱"), ("countryCode", "NL"),
-            ("flagAndIP", "🇳🇱 203.0.113.10"), ("codeAndIP", "NL 203.0.113.10"),
-            ("flagAndCountryCode", "🇳🇱 NL"), ("city", "Amsterdam"),
-            ("cityCode", "AMS"), ("flagAndCityCode", "🇳🇱 AMS")
-        ]
-        for (legacy, expected) in fixtures {
-            withDefaults { defaults in
-                defaults.set(legacy, forKey: "displayMode")
-                let preferences = Preferences(defaults: defaults)
-                #expect(preferences.menuBarLayout.title(ip: "203.0.113.10", countryCode: "NL", stale: false, city: "Amsterdam", cityCode: "AMS") == expected)
-            }
-        }
-    }
-
     @Test func orderCheckboxesAndNameLimitsPersistIncludingAnEmptySelection() {
         withDefaults { defaults in
             let preferences = Preferences(defaults: defaults)

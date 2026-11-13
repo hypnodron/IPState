@@ -88,7 +88,6 @@ See [Default settings](docs/defaults.md) for the initial configuration and its r
 - `Support/AppIcon.icon` — the modern Icon Composer source.
 - `Scripts` — build, test, and packaging commands.
 
-
 ## License
 
 [MIT](LICENSE) · Copyright 2026 hypnodron.

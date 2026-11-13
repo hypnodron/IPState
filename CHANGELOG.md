@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.6 — IP State identity
+
+- Use IP State names for the app identity, settings, modules, tests, logging, and live-test flags.
+- Start with fresh settings instead of migrating earlier app identities or display modes.
+- Use current name limits when a saved layout has no explicit limits.
+- Run release jobs only for new tags and skip versions that already have a release.
+
 ## 0.10.5 — VPN defaults and responsive IP checks
 
 - Show the country flag and country code by default on new installations.

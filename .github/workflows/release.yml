@@ -22,7 +22,25 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Check for an existing release
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          response=$(mktemp)
+          trap 'rm -f "$response"' EXIT
+          if gh api "repos/$GH_REPO/releases/tags/$GITHUB_REF_NAME" > "$response"; then
+            printf '%s\n' 'exists=true' >> "$GITHUB_OUTPUT"
+            printf 'Release %s already exists; skipping.\n' "$GITHUB_REF_NAME"
+          elif python3 -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("status") in (404,"404") else 1)' "$response"; then
+            printf '%s\n' 'exists=false' >> "$GITHUB_OUTPUT"
+          else
+            printf 'Could not determine release status; stopping.\n' >&2
+            exit 1
+          fi
       - name: Check tag matches app version
+        if: steps.existing.outputs.exists != 'true'
         run: |
           version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
           if [[ "$GITHUB_REF_NAME" != "v$version" ]]; then
@@ -30,10 +48,13 @@ jobs:
             exit 1
           fi
       - name: Test without live provider requests
+        if: steps.existing.outputs.exists != 'true'
         run: bash Scripts/swift.sh test
       - name: Package universal app
+        if: steps.existing.outputs.exists != 'true'
         run: bash Scripts/package-release.sh
       - name: Create draft with archive and checksum
+        if: steps.existing.outputs.exists != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}

@@ -56,13 +56,13 @@ The menu shows the last successful IP and update time. A failed lookup never rep
 
 In the **Menu bar** section of Settings, check the items to show. Drag their rows or use the arrow buttons to choose their order.
 Rows keep the same height when their inline fields appear or disappear.
-The preview reflects the current data and layout. Old display modes migrate to the equivalent checkbox selection.
+The preview reflects the current data and layout.
 If all items are unchecked, the app shows a globe so its menu stays accessible.
 
 Check **City name** or **Country name** to reveal a **Max** field beside that item.
 Zero means no limit. Longer names end in an ellipsis that counts toward the limit.
 New installations use 16 characters for city names and 20 for country names when those items are enabled.
-Existing name limits remain unchanged, including previously unlimited names.
+Saved name limits remain unchanged across launches, including zero for unlimited names.
 These limits affect full names; country codes and custom city codes remain separate items.
 Press Return or leave the field to apply a number.
 

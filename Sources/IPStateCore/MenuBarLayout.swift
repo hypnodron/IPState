@@ -64,23 +64,6 @@ public struct MenuBarLayout: Equatable, Sendable {
         self.init(order: order.compactMap(MenuBarComponent.init(rawValue:)), enabled: Set(enabled.compactMap(MenuBarComponent.init(rawValue:))))
     }
 
-    static func migrated(from legacy: String?) -> Self {
-        let enabled: Set<MenuBarComponent>
-        switch legacy {
-        case nil: return Self()
-        case "ip": enabled = [.ip]
-        case "flag": enabled = [.flag]
-        case "flagAndIP": enabled = [.flag, .ip]
-        case "codeAndIP": enabled = [.countryCode, .ip]
-        case "flagAndCountryCode": enabled = [.flag, .countryCode]
-        case "city": enabled = [.city]
-        case "cityCode": enabled = [.cityCode]
-        case "flagAndCityCode": enabled = [.flag, .cityCode]
-        default: enabled = [.countryCode]
-        }
-        return Self(enabled: enabled)
-    }
-
     private func limited(_ text: String, to limit: Int) -> String {
         guard limit > 0, text.count > limit else { return text }
         return String(text.prefix(limit - 1)) + "…"
