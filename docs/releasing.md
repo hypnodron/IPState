@@ -36,7 +36,7 @@ Follow [Apple's notarization documentation](https://developer.apple.com/document
 
 ## GitHub workflows
 
-`ci.yml` runs deterministic tests and packages the universal archive for pushes to `main`, pull requests, and manual runs.
+`ci.yml` runs deterministic tests and packages the universal archive for pushes to `master`, pull requests, and manual runs.
 It uses the `macos-26` hosted image and its selected Xcode. Action revisions are pinned by commit.
 The artifact contains the ZIP and checksum, which preserve executable permissions inside the app archive.
 
@@ -57,7 +57,7 @@ For each release:
 6. Review the workflow result and draft release.
 7. Publish the draft when its notes, signing status, and assets are correct.
 
-For the first publication, create the GitHub repository and push `main` only after reviewing the initial commit and license.
+For the first publication, create the GitHub repository and push `master` only after reviewing the initial commit and license.
 Enable private vulnerability reporting in repository settings if you want the private security-reporting channel.
 
 ## Opt-in live checks
