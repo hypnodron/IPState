@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/icon.png" width="112" alt="IP State app icon">
+  <img src="docs/images/icon.png" width="140" height="140" alt="IP State app icon">
 </p>
 
 # IP State
