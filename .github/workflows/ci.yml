@@ -3,8 +3,31 @@ name: Build and test
 on:
   push:
     branches: [master]
+    paths:
+      - 'Sources/**'
+      - 'Tests/**'
+      - 'Scripts/**'
+      - 'Support/**'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - 'LICENSE'
+      - '.github/workflows/**'
   pull_request:
+    paths:
+      - 'Sources/**'
+      - 'Tests/**'
+      - 'Scripts/**'
+      - 'Support/**'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - 'LICENSE'
+      - '.github/workflows/**'
   workflow_dispatch:
+    inputs:
+      create_archive:
+        description: Create and upload a downloadable app archive
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -27,7 +50,11 @@ jobs:
           swift --version
       - name: Test without live provider requests
         run: bash Scripts/swift.sh test
+      - name: Build universal app
+        if: github.event_name != 'workflow_dispatch' || !inputs.create_archive
+        run: bash Scripts/build-app.sh --universal
       - name: Package universal app
+        if: github.event_name == 'workflow_dispatch' && inputs.create_archive
         run: bash Scripts/package-release.sh
       - name: Verify modern icon resources
         run: |
@@ -39,6 +66,7 @@ jobs:
           assert any(a.get("AssetType") == "IconImageStack" and a.get("Name") == "AppIcon" for a in assets)
           PY
       - name: Upload app archive and checksum
+        if: github.event_name == 'workflow_dispatch' && inputs.create_archive
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: IPState-universal-macos

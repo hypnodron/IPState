@@ -36,9 +36,22 @@ Follow [Apple's notarization documentation](https://developer.apple.com/document
 
 ## GitHub workflows
 
-`ci.yml` runs deterministic tests and packages the universal archive for pushes to `master`, pull requests, and manual runs.
+`ci.yml` runs deterministic tests and a universal app build for relevant changes pushed to `master` or included in pull requests.
+It watches `Sources/`, `Tests/`, `Scripts/`, `Support/`, the package manifest and lockfile, `LICENSE`, and workflow files.
+Documentation and social preview changes do not trigger CI.
 It uses the `macos-26` hosted image and its selected Xcode. Action revisions are pinned by commit.
-The artifact contains the ZIP and checksum, which preserve executable permissions inside the app archive.
+
+Normal CI runs do not create or upload downloadable archives.
+For an on-demand archive, select **Actions → Build and test → Run workflow**.
+Enable **Create and upload a downloadable app archive** before starting the run.
+The resulting `IPState-universal-macos` artifact contains the ZIP and checksum and remains available for 14 days.
+Manual runs without this option only test and build the app.
+
+You can also request an archive with the GitHub CLI:
+
+```sh
+gh workflow run ci.yml --ref master -f create_archive=true
+```
 
 `release.yml` runs after a `v*` tag push. It rejects a tag that does not match `CFBundleShortVersionString`.
 After tests and packaging, it creates a **draft** GitHub release with the ZIP and checksum.
