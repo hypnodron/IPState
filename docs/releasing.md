@@ -10,6 +10,8 @@ bash Scripts/swift.sh test
 bash Scripts/package-release.sh
 ```
 
+Tests run serially because native window rendering shares the main thread with bounded async checks.
+
 Packaging builds a universal `arm64`/`x86_64` executable, compiles the modern icon and legacy fallback, and signs the app locally.
 It includes the MIT license in the app and creates a ZIP with a matching `.sha256` file in `build/release/`.
 The archive name contains the version from `Support/Info.plist`.

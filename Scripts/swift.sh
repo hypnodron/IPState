@@ -8,6 +8,10 @@ cd "$project_dir"
 
 command_name="${1:?Usage: bash Scripts/swift.sh test|build [options]}"
 shift
+if [[ "$command_name" == "test" ]]; then
+    # Keep native rendering from consuming other tests' bounded async deadlines.
+    set -- --no-parallel "$@"
+fi
 exec swift "$command_name" --disable-sandbox \
     --cache-path "$project_dir/.build/cache" \
     --config-path "$project_dir/.build/config" \
