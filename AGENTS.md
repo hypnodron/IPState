@@ -14,4 +14,5 @@
 - The app has no development server or assigned TCP port range.
 - Work on the existing default branch. Do not use a parent repository or create a worktree for routine changes.
 - Keep design research, local agent state, credentials, and build products out of commits.
+- Keep artwork iterations under gitignored `build/social-preview/`. Commit only selected final artwork.
 - Creating a public repository, pushing, and publishing releases require an explicit user request.
