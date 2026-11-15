@@ -9,6 +9,10 @@ Get a notification when your public IP changes.
 
 **macOS 14+ · Apple silicon and Intel · Native SwiftUI · No external packages**
 
+<p align="center">
+  <img src="docs/images/social-preview.png" width="960" alt="IP State — your public IP in the macOS menu bar">
+</p>
+
 ## Features
 
 - Show an IP address, country flag, country code, country name, city, or editable city code.
