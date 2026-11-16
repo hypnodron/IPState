@@ -5,6 +5,16 @@
     <link>https://github.com/hypnodron/IPState/releases</link>
     <description>Published updates for IP State.</description>
     <item>
+      <title>IP State 1.0.0</title>
+      <link>https://github.com/hypnodron/IPState/releases/tag/v1.0.0</link>
+      <pubDate>Mon, 16 Nov 2026 22:55:54 +0000</pubDate>
+      <sparkle:version>23</sparkle:version>
+      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description>&lt;p&gt;## 🌍 IP State 1.0&lt;br&gt;&lt;br&gt;**Your public IP, at a glance.** IP State&amp;#x27;s first stable release keeps your VPN&amp;#x27;s exit IP, location, and connection status in the macOS menu bar.&lt;br&gt;&lt;br&gt;### ✨ What&amp;#x27;s included&lt;br&gt;&lt;br&gt;- Show your public IP, country flag, country code, city, or a combination. Reorder items and limit long names.&lt;br&gt;- Track IPv4 and IPv6 independently, with automatic selection for the menu bar.&lt;br&gt;- Check on network changes and wake, plus a configurable interval from five seconds to 15 minutes.&lt;br&gt;- Get IP-change alerts with the full address and available location. Enable optional connection loss and recovery alerts.&lt;br&gt;- Reuse remembered IP locations and opt into local history with a configurable limit.&lt;br&gt;- Check for signed app updates manually or daily. Preview releases are optional; installation requires confirmation.&lt;br&gt;&lt;br&gt;### ⬇️ Install or update&lt;br&gt;&lt;br&gt;Download **IPState-1.0.0-universal-macos.zip**, extract it, and move **IP State.app** into Applications.&lt;br&gt;The universal app supports Apple silicon and Intel and requires macOS 14 or later.&lt;br&gt;&lt;br&gt;Already on 0.11.0? Choose **Check for Updates…** in the app menu.&lt;br&gt;Earlier versions need one manual installation to enable app updates.&lt;br&gt;Your existing IP State settings remain intact.&lt;br&gt;&lt;br&gt;### ℹ️ First launch&lt;br&gt;&lt;br&gt;This release is ad-hoc signed and **not notarized by Apple**. macOS may block its first launch.&lt;br&gt;See [Apple&amp;#x27;s instructions for opening an unidentified developer&amp;#x27;s app](https://support.apple.com/guide/mac-help/mh40617/mac).&lt;br&gt;The source is available if you prefer to build it yourself.&lt;br&gt;&lt;br&gt;The `.sha256` file records the ZIP&amp;#x27;s SHA-256 checksum.&lt;br&gt;Sparkle verifies the update archive&amp;#x27;s signature before installation.&lt;br&gt;&lt;/p&gt;</description>
+      <enclosure url="https://github.com/hypnodron/IPState/releases/download/v1.0.0/IPState-1.0.0-universal-macos.zip" length="4466350" type="application/octet-stream" sparkle:edSignature="njdY9TdjuhuLUlD0NNeuisiK1D/yphpS5KPW7o2y5Y3piOOyjBRWc4oB8wv3cwztfWhjB1qy9wmI93w5SSS5BQ==" />
+    </item>
+    <item>
       <title>IP State 0.11.0</title>
       <link>https://github.com/hypnodron/IPState/releases/tag/v0.11.0</link>
       <pubDate>Mon, 16 Nov 2026 14:16:09 +0000</pubDate>
