@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<rss version="2.0">
+  <channel>
+    <title>IP State updates</title>
+    <link>https://github.com/hypnodron/IPState/releases</link>
+    <description>Published updates for IP State.</description>
+  </channel>
+</rss>
