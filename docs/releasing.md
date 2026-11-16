@@ -20,7 +20,7 @@ The archive name contains the version from `Support/Info.plist`.
 Verify an archive's checksum from its directory:
 
 ```sh
-shasum -a 256 -c IPState-0.11.0-universal-macos.zip.sha256
+shasum -a 256 -c IPState-1.0.0-universal-macos.zip.sha256
 ```
 
 Before distributing a new build, extract it and check the signature, launch, settings, and icon in Finder.
@@ -58,7 +58,7 @@ For a local signed update, use the existing Keychain key:
 
 ```sh
 bash Scripts/package-release.sh
-bash Scripts/sign-update.sh build/release/IPState-0.11.0-universal-macos.zip
+bash Scripts/sign-update.sh build/release/IPState-1.0.0-universal-macos.zip
 ```
 
 The signing command verifies the archive against the app's public key and creates `build/release/update.json`.
@@ -99,7 +99,7 @@ For each release:
 2. Update `CHANGELOG.md` and `docs/release-notes.md`.
 3. Run the local checks and review the extracted app.
 4. Commit the release changes.
-5. Create and push the matching tag, such as `v0.11.0`.
+5. Create and push the matching tag, such as `v1.0.0`.
 6. Review the workflow result and draft release.
 7. Publish the draft when its notes, signing status, and assets are correct.
 

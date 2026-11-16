@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0 — First stable release
+
+- Publish the first stable release with public IP and location display, IP-change alerts, and optional connection alerts.
+- Include configurable menu bar items, automatic address-family selection, remembered locations, and optional local history.
+- Offer signed app updates through the stable channel, with optional daily checks and preview releases.
+- Preserve existing IP State settings when updating from 0.11.0.
+
 ## 0.11.0 — App updates
 
 - Add Check for Updates to the menu with Sparkle's native update interface.

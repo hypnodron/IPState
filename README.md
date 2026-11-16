@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/hypnodron/IPState/releases"><strong>⬇️ Download for macOS</strong></a>
+  <a href="https://github.com/hypnodron/IPState/releases/latest"><strong>⬇️ Download for macOS</strong></a>
   &nbsp;·&nbsp; <a href="docs/usage.md">📖 User guide</a>
   &nbsp;·&nbsp; <a href="docs/privacy.md">🔒 Privacy</a>
 </p>
@@ -45,12 +45,12 @@ Switch VPN locations, reconnect to Wi-Fi, or change networks. See your current p
 
 ## 🚀 Get started
 
-1. **[Download the universal macOS ZIP](https://github.com/hypnodron/IPState/releases)** from the newest preview release.
+1. **[Download the universal macOS ZIP](https://github.com/hypnodron/IPState/releases/latest)** from the latest stable release.
 2. Extract it and move **IP State.app** into **Applications**.
 3. Open the app. Click its menu bar item, then choose **Settings…** to make it yours.
 
 > [!NOTE]
-> The current preview is ad-hoc signed and **not yet notarized by Apple**. macOS may block its first launch.
+> The downloadable app is ad-hoc signed and **not yet notarized by Apple**. macOS may block its first launch.
 > If you choose to open it, follow [Apple's instructions for an unidentified developer's app](https://support.apple.com/guide/mac-help/mh40617/mac).
 
 After installation, use **Check for Updates…** for future releases. Daily checks and preview updates are opt-in.
@@ -119,6 +119,8 @@ See [Contributing](CONTRIBUTING.md) for development guidance and [the release gu
 
 🐛 [Report a bug](https://github.com/hypnodron/IPState/issues/new?template=bug_report.yml) or 💡 [suggest a feature](https://github.com/hypnodron/IPState/issues/new?template=feature_request.yml).
 Code contributions are welcome—see [Contributing](CONTRIBUTING.md) to get started.
+
+Check out my other projects at [hypnodron.com](https://hypnodron.com).
 
 ## 📄 License
 
