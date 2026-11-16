@@ -2,29 +2,40 @@
   <img src="docs/images/icon.png" width="140" height="140" alt="IP State app icon">
 </p>
 
-# IP State
+<h1 align="center">IP State</h1>
 
-Your public IP, location, and connection status in the macOS menu bar.
-Get a notification when your public IP changes.
+<p align="center">
+  <strong>Your public IP, at a glance. 🌍</strong><br>
+  Keep an eye on your VPN's exit IP, location, and connection status from the macOS menu bar.
+</p>
 
-**macOS 14+ · Apple silicon and Intel · Native SwiftUI**
+<p align="center">
+  🍎 macOS 14+ &nbsp;·&nbsp; 💻 Apple silicon &amp; Intel &nbsp;·&nbsp; 🆓 Free &amp; open source
+</p>
+
+<p align="center">
+  <a href="https://github.com/hypnodron/IPState/releases"><strong>⬇️ Download for macOS</strong></a>
+  &nbsp;·&nbsp; <a href="docs/usage.md">📖 User guide</a>
+  &nbsp;·&nbsp; <a href="docs/privacy.md">🔒 Privacy</a>
+</p>
 
 <p align="center">
   <img src="docs/images/social-preview.png" width="960" alt="IP State — your public IP in the macOS menu bar">
 </p>
 
-## Features
+## ✨ Keep your connection in view
 
-- Show an IP address, country flag, country code, country name, city, or editable city code.
-- Choose which items appear and reorder them. Limit long city and country names.
-- Track IPv4 and IPv6 independently; automatically display an available address family.
-- Check every 5 seconds to 15 minutes, or turn periodic checks off. Also check on wake and network changes.
-- Receive IP-change alerts, plus optional connection loss and recovery alerts.
-- Keep optional local IP history with a configurable retention count.
-- Copy addresses, refresh manually, and optionally start at login.
-- Use four location providers with automatic fallbacks.
-- Remember recent IP locations across restarts, with automatic refresh and expiry.
-- Check for app updates manually or daily, with optional preview releases and confirmation before installation.
+Switch VPN locations, reconnect to Wi-Fi, or change networks. See your current public IP without opening a browser.
+
+- 🌍 **See your exit location.** Show your IP, country flag, country code, city, or a combination.
+- 🔔 **Catch IP changes.** Get an alert with the new address and available location details.
+- ⚡ **Follow network changes.** Check on wake and network changes, plus every 5 seconds to 15 minutes—or turn periodic checks off.
+- 🧩 **Make the menu bar yours.** Pick and reorder items, limit long names, and set your own city codes.
+- 📡 **Spot connection problems.** See an offline indicator and enable optional connection loss and recovery alerts.
+- 🔀 **Track IPv4 and IPv6.** Monitor both independently and automatically show an available address in the menu bar.
+- 🕘 **Remember recent IPs.** Opt into local change history. Returning IPs reuse cached locations while fresh lookups run when needed.
+- 🍎 **Feel at home on Mac.** Native SwiftUI, quick address copying, optional start at login, and no Dock icon.
+- 🔄 **Update from the app.** Check for signed app updates manually or daily, with optional preview releases and confirmation before installation.
 
 <p align="center">
   <img src="docs/images/settings.png" width="672" alt="IP State settings with configurable menu bar items, checks, notifications, and history">
@@ -32,60 +43,69 @@ Get a notification when your public IP changes.
 
 *Settings preview uses illustrative location data and example IP addresses.*
 
-## Install
+## 🚀 Get started
 
-Download the universal macOS ZIP from [Releases](https://github.com/hypnodron/IPState/releases).
-Extract it, move **IP State.app** into Applications, and open it.
-The app lives in the menu bar and has no Dock icon. Click its menu bar item, then choose **Settings…**.
+1. **[Download the universal macOS ZIP](https://github.com/hypnodron/IPState/releases)** from the newest preview release.
+2. Extract it and move **IP State.app** into **Applications**.
+3. Open the app. Click its menu bar item, then choose **Settings…** to make it yours.
 
-The first preview is ad-hoc signed and **not notarized by Apple**. macOS may block its first launch.
-If you choose to open it, follow [Apple's instructions for an unidentified developer's app](https://support.apple.com/guide/mac-help/mh40617/mac).
-You can also build the source yourself.
+> [!NOTE]
+> The current preview is ad-hoc signed and **not yet notarized by Apple**. macOS may block its first launch.
+> If you choose to open it, follow [Apple's instructions for an unidentified developer's app](https://support.apple.com/guide/mac-help/mh40617/mac).
 
-## Build from source
+After installation, use **Check for Updates…** for future releases. Daily checks and preview updates are opt-in.
+Versions before 0.11.0 need this manual installation once to enable app updates.
+
+## 🔒 Clear about privacy
+
+**No accounts, ads, or app analytics.** No location permission or application server.
+
+Your preferences, cached locations, and optional history stay on your Mac. History is off by default.
+Public IP and location lookups contact third-party services, which receive your public IP.
+Four location providers offer automatic fallbacks when a lookup fails.
+
+Read [Privacy and network requests](docs/privacy.md) for providers, update checks, and local storage details.
+
+## ℹ️ What to expect
+
+- ⏱️ Checks default to every five seconds and also run on wake and network changes. Changes between checks can be missed.
+- 🌐 Country and city are approximate IP locations. IPv4, IPv6, split tunnels, and proxies can give other apps different exit routes.
+- 🟡 The first result sets a silent baseline. Failed lookups keep the last result and mark it stale.
+- 🔔 macOS controls notification permission, banners, sounds, and Focus behavior.
+
+See the [user guide](docs/usage.md) for full behavior and [default settings](docs/defaults.md) for the initial configuration.
+
+## 🛠️ Build from source
+
+<details>
+<summary>Developer setup and commands</summary>
 
 Use Xcode with Swift 6 and Icon Composer. Swift Package Manager downloads the pinned [Sparkle](https://sparkle-project.org/) updater.
+
+Build and open the app:
 
 ```sh
 bash Scripts/build-app.sh
 open "build/IP State.app"
 ```
 
-To build for both Apple silicon and Intel:
+Build for both Apple silicon and Intel:
 
 ```sh
 bash Scripts/build-app.sh --universal
 ```
 
-To run the deterministic tests:
+Run the deterministic tests:
 
 ```sh
 bash Scripts/swift.sh test
+python3 -m unittest discover -s Tests/ReleaseTools -v
 ```
 
 Build products and compiler caches stay in `.build/` and `build/`.
 See [Contributing](CONTRIBUTING.md) for development guidance and [the release guide](docs/releasing.md) for packaging.
 
-## Behavior and privacy
-
-The default refresh interval is five seconds. Network events and wake trigger immediate checks, including when periodic checks are off.
-Changes can only be detected when a check runs; changes between checks may be missed.
-
-The first successful result establishes a baseline without an alert. Failed lookups keep the last known result and mark it stale.
-The menu bar updates before location enrichment finishes. macOS controls notification permission, banners, sounds, and Focus behavior.
-
-Country and city are approximate IP-location results, not the Mac's physical location.
-IPv4 and IPv6 can have different exits. Split tunnels and proxies may route other apps differently.
-
-IP State has no account, analytics, application server, or location permission.
-It contacts public IP and location services, which receive your public IP.
-Preferences, cached locations, and optional history stay on your Mac. History is off by default.
-See [Privacy and network requests](docs/privacy.md) for the exact providers and storage behavior.
-
-For detailed settings, notification, and connection behavior, see [Using IP State](docs/usage.md).
-See [Default settings](docs/defaults.md) for the initial configuration and its rationale for VPN users.
-
-## Project layout
+### Project layout
 
 - `Sources/IPStateCore` — lookups, monitoring, preferences, and display formatting.
 - `Sources/IPState` — native menu bar interface, settings, notifications, and lifecycle.
@@ -93,6 +113,13 @@ See [Default settings](docs/defaults.md) for the initial configuration and its r
 - `Support/AppIcon.icon` — the modern Icon Composer source.
 - `Scripts` — build, test, and packaging commands.
 
-## License
+</details>
+
+## 💬 Feedback & contributions
+
+🐛 [Report a bug](https://github.com/hypnodron/IPState/issues/new?template=bug_report.yml) or 💡 [suggest a feature](https://github.com/hypnodron/IPState/issues/new?template=feature_request.yml).
+Code contributions are welcome—see [Contributing](CONTRIBUTING.md) to get started.
+
+## 📄 License
 
 [MIT](LICENSE) · Copyright 2026 hypnodron.
