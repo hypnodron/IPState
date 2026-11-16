@@ -30,14 +30,13 @@ jobs:
         run: |
           response=$(mktemp)
           trap 'rm -f "$response"' EXIT
-          if gh api "repos/$GH_REPO/releases/tags/$GITHUB_REF_NAME" > "$response"; then
+          gh api "repos/$GH_REPO/releases?per_page=100" \
+            --paginate --jq '.[] | .tag_name' > "$response"
+          if python3 -c 'import sys; sys.exit(0 if sys.argv[1] in open(sys.argv[2]).read().splitlines() else 1)' "$GITHUB_REF_NAME" "$response"; then
             printf '%s\n' 'exists=true' >> "$GITHUB_OUTPUT"
             printf 'Release %s already exists; skipping.\n' "$GITHUB_REF_NAME"
-          elif python3 -c 'import json,sys; sys.exit(0 if json.load(open(sys.argv[1])).get("status") in (404,"404") else 1)' "$response"; then
-            printf '%s\n' 'exists=false' >> "$GITHUB_OUTPUT"
           else
-            printf 'Could not determine release status; stopping.\n' >&2
-            exit 1
+            printf '%s\n' 'exists=false' >> "$GITHUB_OUTPUT"
           fi
       - name: Check tag matches app version
         if: steps.existing.outputs.exists != 'true'
