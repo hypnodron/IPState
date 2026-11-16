@@ -23,7 +23,9 @@ struct SettingsWindowTests {
         defer { model.stop() }
         await model.ipv4.refresh()
         await model.notifications.updateAuthorization()
-        let controller = SettingsWindowController(content: SettingsView(model: model))
+        let updater = AppUpdater(defaults: defaults)
+        let controller = SettingsWindowController(content: SettingsView(model: model, updater: updater))
+        let defaultSize = controller.window.contentView!.bounds.size
         defer { controller.window.close() }
         controller.window.setContentSize(NSSize(width: 560, height: 520))
         controller.window.contentView?.layoutSubtreeIfNeeded()
@@ -35,7 +37,7 @@ struct SettingsWindowTests {
         let image = try #require(bitmap.representation(using: .png, properties: [:]))
         try FileManager.default.createDirectory(atPath: "build/review", withIntermediateDirectories: true)
         try image.write(to: URL(fileURLWithPath: "build/review/fixed-settings-minimum.png"))
-        controller.window.setContentSize(NSSize(width: 560, height: 600))
+        controller.window.setContentSize(defaultSize)
         view.layoutSubtreeIfNeeded()
         let defaultBitmap = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
         view.cacheDisplay(in: view.bounds, to: defaultBitmap)

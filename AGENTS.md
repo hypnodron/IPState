@@ -2,7 +2,11 @@
 
 - This directory is the project and Git repository root.
 - Read `README.md`, `docs/usage.md`, and `docs/releasing.md` for behavior, builds, and releases.
-- Native SwiftUI menu bar app; macOS 14+, Swift 6, no external packages.
+- Native SwiftUI menu bar app; macOS 14+, Swift 6. Sparkle is the only external package.
+- Keep Sparkle pinned and commit `Package.resolved`. Bundle its framework, helpers, and license with the app.
+- Run `python3 -m unittest discover -s Tests/ReleaseTools -v` for update feed regression tests.
+- Update archives require Ed25519 signatures. Keep the private key in Keychain and the `SPARKLE_PRIVATE_KEY` repository secret.
+- Publish the appcast on the `updates` branch only from published releases with valid signed metadata.
 - Use `bash Scripts/swift.sh test` and `bash Scripts/build-app.sh` from this directory.
 - Build products and compiler caches remain in `.build/` and `build/`.
 - The executable product is `IPState`; the app bundle is `build/IP State.app`.

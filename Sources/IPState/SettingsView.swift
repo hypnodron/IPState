@@ -4,23 +4,50 @@ import IPStateCore
 
 struct SettingsView: View {
     @Bindable var model: AppModel
+    var updater: AppUpdater? = nil
 
     var body: some View {
         ScrollView {
             VStack(spacing: 8) {
                 MenuBarSettingsView(model: model)
                 GeneralSettingsView(model: model)
+                if let updater { AppUpdateSettingsView(updater: updater) }
             }
             .padding(12)
             .frame(maxWidth: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
         .frame(minWidth: 560, idealWidth: 560, maxWidth: .infinity,
-               minHeight: 520, idealHeight: 600, maxHeight: .infinity)
+               minHeight: 520, idealHeight: 720, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
         .task {
             await model.notifications.updateAuthorization()
             model.syncLoginStatus()
+        }
+    }
+}
+
+private struct AppUpdateSettingsView: View {
+    @Bindable var updater: AppUpdater
+
+    var body: some View {
+        GroupBox("App updates") {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Toggle("Automatically check for updates", isOn: Binding(
+                        get: { updater.automaticallyChecksForUpdates }, set: { updater.setAutomaticChecks($0) }))
+                    Spacer()
+                    Button("Check Now…") { updater.checkForUpdates() }
+                        .controlSize(.small)
+                        .disabled(!updater.canCheckForUpdates)
+                }
+                Toggle("Include preview releases", isOn: $updater.includesPreviewReleases)
+                SettingsHelp("Checks daily when enabled. Installation always asks for confirmation.")
+                if let error = updater.errorMessage { SettingsHelp(error) }
+            }
+            .toggleStyle(.checkbox)
+            .padding(4)
+            .frame(maxWidth: .infinity)
         }
     }
 }

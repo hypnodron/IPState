@@ -50,6 +50,8 @@ jobs:
           swift --version
       - name: Test without live provider requests
         run: bash Scripts/swift.sh test
+      - name: Test update feed rules
+        run: python3 -m unittest discover -s Tests/ReleaseTools -v
       - name: Build universal app
         if: github.event_name != 'workflow_dispatch' || !inputs.create_archive
         run: bash Scripts/build-app.sh --universal

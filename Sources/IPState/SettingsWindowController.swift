@@ -10,7 +10,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
     private static let minimumContentSize = NSSize(width: 560, height: 520)
 
     init<Content: View>(content: Content) {
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 600),
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 720),
                           styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         let hosting = NSHostingController(rootView: content)
         // AppKit owns the window bounds; SwiftUI must not replace them with content limits.
@@ -21,7 +21,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
         window.isReleasedWhenClosed = false
         window.contentMinSize = Self.minimumContentSize
         window.contentMaxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        window.setContentSize(NSSize(width: 560, height: 600))
+        window.setContentSize(NSSize(width: 560, height: 720))
         controller = NSWindowController(window: window)
         super.init()
         window.delegate = self

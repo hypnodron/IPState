@@ -15,6 +15,17 @@ Entries older than seven days are ignored and removed on cache access or app lau
 
 The app does not encrypt this preferences storage. Other software with access to your user account may read it.
 
+## App update checks
+
+[Sparkle](https://sparkle-project.org/) checks the app's update feed on `raw.githubusercontent.com` over HTTPS.
+Checks run when you choose **Check for Updates…**, or daily if you enable automatic checks.
+The setting for periodic IP checks does not control app update checks.
+Update archives download from GitHub Releases and its asset delivery hosts after you choose to install an update.
+GitHub receives your source public IP and normal request metadata, including the app's update client information.
+These requests do not include IP history, cached locations, city labels, or Sparkle system profiling data.
+Update preferences and the last check time remain in local macOS preferences storage.
+Updates require an archive signature that matches the public key embedded in the app.
+
 ## Public IP checks
 
 The app uses HTTPS to ask these services for its public address:

@@ -23,7 +23,24 @@ if [[ "${1:-}" == --universal ]]; then
     done
 fi
 app_dir="$project_dir/build/IP State.app"
-mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources"
+mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Resources" "$app_dir/Contents/Frameworks"
+sparkle_dir="$project_dir/.build/artifacts/sparkle/Sparkle"
+framework="$app_dir/Contents/Frameworks/Sparkle.framework"
+# Replace the previous framework completely so older helpers cannot remain in the bundle.
+python3 - "$framework" <<'PY'
+from pathlib import Path
+import shutil
+import sys
+destination = Path(sys.argv[1])
+if destination.exists():
+    shutil.rmtree(destination)
+PY
+/usr/bin/ditto "$sparkle_dir/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework" "$framework"
+cp "$sparkle_dir/LICENSE" "$app_dir/Contents/Resources/Sparkle-LICENSE.txt"
+for component in XPCServices/Downloader.xpc XPCServices/Installer.xpc Autoupdate Updater.app; do
+    /usr/bin/codesign --force --sign - --preserve-metadata=identifier,entitlements "$framework/Versions/B/$component"
+done
+/usr/bin/codesign --force --sign - --preserve-metadata=identifier "$framework"
 bash "$project_dir/Scripts/build-icon.sh"
 cp "$project_dir/build/AppIcon/AppIcon.icns" "$app_dir/Contents/Resources/AppIcon.icns"
 cp "$project_dir/build/AppIcon/Assets.car" "$app_dir/Contents/Resources/Assets.car"

@@ -7,7 +7,7 @@
 Your public IP, location, and connection status in the macOS menu bar.
 Get a notification when your public IP changes.
 
-**macOS 14+ · Apple silicon and Intel · Native SwiftUI · No external packages**
+**macOS 14+ · Apple silicon and Intel · Native SwiftUI**
 
 <p align="center">
   <img src="docs/images/social-preview.png" width="960" alt="IP State — your public IP in the macOS menu bar">
@@ -24,6 +24,7 @@ Get a notification when your public IP changes.
 - Copy addresses, refresh manually, and optionally start at login.
 - Use four location providers with automatic fallbacks.
 - Remember recent IP locations across restarts, with automatic refresh and expiry.
+- Check for app updates manually or daily, with optional preview releases and confirmation before installation.
 
 <p align="center">
   <img src="docs/images/settings.png" width="672" alt="IP State settings with configurable menu bar items, checks, notifications, and history">
@@ -43,7 +44,7 @@ You can also build the source yourself.
 
 ## Build from source
 
-Use Xcode with Swift 6 and Icon Composer. There are no external package dependencies.
+Use Xcode with Swift 6 and Icon Composer. Swift Package Manager downloads the pinned [Sparkle](https://sparkle-project.org/) updater.
 
 ```sh
 bash Scripts/build-app.sh

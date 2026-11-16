@@ -8,7 +8,7 @@ struct IPStateApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            IPStateMenu(model: delegate.model, showSettings: { delegate.showSettings() })
+            IPStateMenu(model: delegate.model, updater: delegate.updater, showSettings: { delegate.showSettings() })
         } label: {
             MenuBarStatusLabel(title: delegate.model.title, condition: delegate.model.networkHealth.condition,
                                isStale: delegate.model.monitor.isStale && delegate.model.monitor.ip != nil)
@@ -16,6 +16,10 @@ struct IPStateApp: App {
         .menuBarExtraStyle(.menu)
 
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { delegate.updater.checkForUpdates() }
+                    .disabled(!delegate.updater.canCheckForUpdates)
+            }
             CommandGroup(replacing: .appSettings) {
                 Button("Settings…") { delegate.showSettings() }
                     .keyboardShortcut(",")
@@ -27,15 +31,19 @@ struct IPStateApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel(locationCache: IPLocationCache(defaults: UserDefaults(suiteName: "IPStateSettings")))
+    let updater = AppUpdater()
     private var settingsController: SettingsWindowController?
 
-    func applicationDidFinishLaunching(_ notification: Notification) { model.start() }
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        model.start()
+        updater.start()
+    }
     func applicationWillTerminate(_ notification: Notification) { model.stop() }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
 
     func showSettings() {
         if settingsController == nil {
-            settingsController = SettingsWindowController(content: SettingsView(model: model))
+            settingsController = SettingsWindowController(content: SettingsView(model: model, updater: updater))
         }
         settingsController?.show()
         model.syncLoginStatus()
@@ -45,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 private struct IPStateMenu: View {
     let model: AppModel
+    let updater: AppUpdater
     let showSettings: () -> Void
 
     var body: some View {
@@ -85,6 +94,8 @@ private struct IPStateMenu: View {
             showSettings()
         }
             .keyboardShortcut(",")
+        Button("Check for Updates…") { updater.checkForUpdates() }
+            .disabled(!updater.canCheckForUpdates)
         Button("Quit IP State") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }

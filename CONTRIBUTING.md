@@ -4,10 +4,12 @@ Keep IP State a small native macOS menu bar utility. Discuss larger features in 
 
 ## Development
 
-Use macOS 14 or later and Xcode with Swift 6 and Icon Composer. There are no external package dependencies.
+Use macOS 14 or later and Xcode with Swift 6 and Icon Composer. Sparkle is the only external package.
+Keep its version pinned and commit `Package.resolved`.
 
 ```sh
 bash Scripts/swift.sh test
+python3 -m unittest discover -s Tests/ReleaseTools -v
 bash Scripts/build-app.sh
 open "build/IP State.app"
 ```

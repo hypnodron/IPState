@@ -1,0 +1,29 @@
+name: Publish update feed
+
+on:
+  release:
+    types: [published, edited, released, prereleased, unpublished, deleted]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-feed
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: master
+          persist-credentials: false
+      - name: Validate release feed tools
+        run: python3 -m unittest discover -s Tests/ReleaseTools -v
+      - name: Publish feed from current published releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 Scripts/update-feed.py publish

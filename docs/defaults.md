@@ -21,6 +21,9 @@ These defaults favor quick detection, a compact menu bar, and limited notificati
 | IP history | Off; retain 20 changes when enabled | Avoids a saved change timeline until the user requests one. |
 | Location cache | Up to 100 IPs; fresh for 24 hours; expire after 7 days | Reuses known locations immediately while allowing reassignment and data corrections. |
 | Appearance and notification presentation | macOS settings | Respects system theme, Focus, banners, and sound preferences. |
+| Automatic app update checks | Off; daily when enabled | Users opt in to background requests to GitHub. Manual checks always remain available. |
+| Preview app updates | Off | Offers stable releases unless the user enables preview releases. |
+| App update installation | User confirmation | Updates never install silently or restart the app without approval. |
 
 The first successful address establishes a silent baseline. Later changes generate alerts.
 Location lookup does not delay the connection status. Recovery probes retry three seconds after the previous check finishes.

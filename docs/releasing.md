@@ -7,19 +7,20 @@ The app's runtime minimum remains macOS 14.
 
 ```sh
 bash Scripts/swift.sh test
+python3 -m unittest discover -s Tests/ReleaseTools -v
 bash Scripts/package-release.sh
 ```
 
 Tests run serially because native window rendering shares the main thread with bounded async checks.
 
 Packaging builds a universal `arm64`/`x86_64` executable, compiles the modern icon and legacy fallback, and signs the app locally.
-It includes the MIT license in the app and creates a ZIP with a matching `.sha256` file in `build/release/`.
+It includes both app and Sparkle licenses, embeds Sparkle's framework and helpers, and creates a ZIP and `.sha256` file in `build/release/`.
 The archive name contains the version from `Support/Info.plist`.
 
 Verify an archive's checksum from its directory:
 
 ```sh
-shasum -a 256 -c IPState-0.10.6-universal-macos.zip.sha256
+shasum -a 256 -c IPState-0.11.0-universal-macos.zip.sha256
 ```
 
 Before distributing a new build, extract it and check the signature, launch, settings, and icon in Finder.
@@ -35,6 +36,35 @@ To distribute without the unidentified-developer first-launch exception, obtain 
 That requires an Apple Developer account and separately configured signing credentials.
 Do not commit certificates, passwords, provisioning files, or private keys.
 Follow [Apple's notarization documentation](https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution).
+
+## Update signing key
+
+Sparkle archive signatures are separate from Apple code signing and notarization.
+The app verifies updates against `SUPublicEDKey` in `Support/Info.plist` before extraction.
+The corresponding private key stays in macOS Keychain under the account `com.hypnodron.IPState`.
+Keep a secure backup of this key. Do not regenerate it for each release or commit an exported private key.
+
+After resolving the Swift package, export the key directly into the repository secret:
+
+```sh
+umask 077
+key_file=$(mktemp)
+trap 'rm -f "$key_file"' EXIT
+.build/artifacts/sparkle/Sparkle/bin/generate_keys --account com.hypnodron.IPState -x "$key_file"
+gh secret set SPARKLE_PRIVATE_KEY --repo hypnodron/IPState < "$key_file"
+```
+
+For a local signed update, use the existing Keychain key:
+
+```sh
+bash Scripts/package-release.sh
+bash Scripts/sign-update.sh build/release/IPState-0.11.0-universal-macos.zip
+```
+
+The signing command verifies the archive against the app's public key and creates `build/release/update.json`.
+This public metadata records the archive signature, byte count, version, build number, and minimum macOS version.
+CI reads the private key through `SPARKLE_PRIVATE_KEY`; it does not store the private key in an artifact.
+See [Sparkle's signing documentation](https://sparkle-project.org/documentation/publishing/).
 
 ## GitHub workflows
 
@@ -56,7 +86,8 @@ gh workflow run ci.yml --ref master -f create_archive=true
 ```
 
 `release.yml` runs after a `v*` tag push. It rejects a tag that does not match `CFBundleShortVersionString`.
-After tests and packaging, it creates a **draft** GitHub release with the ZIP and checksum.
+After tests, packaging, and update signing, it creates a **draft** GitHub release with the ZIP, checksum, and `update.json`.
+The `SPARKLE_PRIVATE_KEY` repository secret is required; a missing or mismatched key stops the release job.
 It runs only for newly created tags and skips versions that already have a draft or published release.
 It does not publish the draft automatically. Review the notes and artifacts before publishing.
 To retry a version with an incomplete draft, delete that draft before rerunning its release job.
@@ -68,12 +99,45 @@ For each release:
 2. Update `CHANGELOG.md` and `docs/release-notes.md`.
 3. Run the local checks and review the extracted app.
 4. Commit the release changes.
-5. Create and push the matching tag, such as `v0.10.6`.
+5. Create and push the matching tag, such as `v0.11.0`.
 6. Review the workflow result and draft release.
 7. Publish the draft when its notes, signing status, and assets are correct.
 
 For the first publication, create the GitHub repository and push `master` only after reviewing the initial commit and license.
 Enable private vulnerability reporting in repository settings if you want the private security-reporting channel.
+
+## Update feed publication
+
+`update-feed.yml` regenerates the appcast after publication or changes to releases.
+It reads current published releases, so delayed workflow events cannot restore an obsolete feed snapshot.
+Drafts and legacy releases without `update.json` are omitted.
+Releases marked as prereleases use Sparkle's `preview` channel; stable releases use the default channel.
+Promoting or withdrawing a release refreshes this channel selection.
+Every offered archive must have a signature, a matching tag and byte count, and a download URL in this repository.
+Build numbers must be unique and increase across releases.
+
+The workflow creates or updates only `appcast.xml` on a separate `updates` branch, using `contents: write`.
+It leaves `master` unchanged. GitHub serves the feed at:
+
+```text
+https://raw.githubusercontent.com/hypnodron/IPState/updates/appcast.xml
+```
+
+After the workflow is first pushed to `master`, initialize the feed before distributing an updater-enabled build:
+
+```sh
+gh workflow run update-feed.yml --ref master --repo hypnodron/IPState
+```
+
+An empty feed is valid until the first signed release is published.
+To inspect the generated feed locally without publishing:
+
+```sh
+python3 Scripts/update-feed.py publish --dry-run
+```
+
+After publishing, check that the feed workflow passes and the public feed contains the expected release and channel.
+Versions before 0.11.0 have no updater, so their users must install an updater-enabled version manually once.
 
 ## Opt-in live checks
 

@@ -4,6 +4,15 @@ IP State lives in the menu bar. Click its item to view addresses, refresh, copy 
 
 There is no Dock icon or main app window.
 
+## App updates
+
+Choose **Check for Updates…** in the menu to check for a new app version.
+In Settings, **Automatically check for updates** enables daily checks; it is off by default.
+Enable **Include preview releases** to receive preview releases as well as stable releases.
+Installation always requires confirmation. The updater verifies the archive signature before extraction, then replaces and relaunches the app.
+App update checks are independent of the interval for public IP checks.
+Versions before 0.11.0 need one manual installation of an updater-enabled version.
+
 New installations show the country flag and country code, check every five seconds, and enable IP-change notifications subject to macOS permission.
 Connection notifications, login startup, and history are opt-in. See [Default settings](defaults.md) for the complete choices and rationale.
 

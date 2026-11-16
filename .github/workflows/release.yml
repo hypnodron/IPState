@@ -53,6 +53,16 @@ jobs:
       - name: Package universal app
         if: steps.existing.outputs.exists != 'true'
         run: bash Scripts/package-release.sh
+      - name: Sign the update archive
+        if: steps.existing.outputs.exists != 'true'
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          if [[ -z "$SPARKLE_PRIVATE_KEY" ]]; then
+            printf '%s\n' 'Configure the SPARKLE_PRIVATE_KEY repository secret before preparing a release.' >&2
+            exit 1
+          fi
+          bash Scripts/sign-update.sh build/release/*.zip
       - name: Create draft with archive and checksum
         if: steps.existing.outputs.exists != 'true'
         env:
@@ -60,7 +70,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            build/release/*.zip build/release/*.sha256 \
+            build/release/*.zip build/release/*.sha256 build/release/update.json \
             --verify-tag --draft \
             --title "IP State ${GITHUB_REF_NAME#v}" \
             --notes-file docs/release-notes.md

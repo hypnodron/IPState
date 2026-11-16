@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.11.0 — App updates
+
+- Add Check for Updates to the menu with Sparkle's native update interface.
+- Add optional daily app update checks and an opt-in preview channel.
+- Verify signed update archives before extraction and require confirmation before installation.
+- Generate the update feed from published releases on a separate `updates` branch.
+
 ## 0.10.6 — IP State identity
 
 - Use IP State names for the app identity, settings, modules, tests, logging, and live-test flags.

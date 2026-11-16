@@ -1,10 +1,9 @@
 IP State shows your public IP and location in the macOS menu bar and alerts you when the address changes.
 
-This preview includes automatic IPv4/IPv6 selection, configurable checks, connection alerts, and optional local history.
-
-Version 0.10.6 uses the IP State name throughout the app identity, settings, source modules, and developer tools.
-This build starts with fresh settings and does not import settings from earlier app identities.
-Enable notifications and Start at login again if needed. Quit the previous app before opening this build.
+Version 0.11.0 adds **Check for Updates…** to the menu and native, signed app updates through Sparkle.
+Settings offers optional daily update checks and an opt-in preview channel. Installation always requires confirmation.
+Existing versions have no updater: install this build manually once to receive future updates from the app.
+Your existing IP State settings remain intact.
 
 The default menu bar shows a country flag and code. Public IP checks continue independently of location lookup.
 VPN changes reset retry delays, and canceled IP alerts stay canceled when notifications are re-enabled.
