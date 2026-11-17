@@ -2,7 +2,7 @@
 
 - This directory is the project and Git repository root.
 - Read `README.md`, `docs/usage.md`, and `docs/releasing.md` for behavior, builds, and releases.
-- Native SwiftUI menu bar app; macOS 14+, Swift 6. Sparkle is the only external package.
+- Native SwiftUI menu bar app; macOS 14+, Swift 6. Sparkle is the only app dependency.
 - Keep Sparkle pinned and commit `Package.resolved`. Bundle its framework, helpers, and license with the app.
 - Run `python3 -m unittest discover -s Tests/ReleaseTools -v` for update feed regression tests.
 - Update archives require Ed25519 signatures. Keep the private key in Keychain and the `SPARKLE_PRIVATE_KEY` repository secret.
@@ -11,7 +11,10 @@
 - Build products and compiler caches remain in `.build/` and `build/`.
 - The executable product is `IPState`; the app bundle is `build/IP State.app`.
 - The modern icon source is `Support/AppIcon.icon`; compile it with Xcode's Icon Composer asset tools.
-- Run `bash Scripts/package-release.sh` for a universal app archive and checksum.
+- Run `bash Scripts/package-release.sh` for universal ZIP and DMG downloads with checksums.
+- DMGs contain the app and an Applications shortcut. App updates use the signed ZIP.
+- Styled DMG builds use hash-pinned Python tools in `.build/dmg-venv/`; Python 3.11+ is required.
+- Keep the DMG background source and Finder layout in `Support/DMG/`.
 - Use `com.hypnodron.IPState` as the bundle identifier and `IPStateSettings` for settings.
 - Keep change detection and lookup behavior in `IPStateCore` with meaningful regression tests.
 - Never change VPN, Wi-Fi, routing, or other network state during verification. Ask the user to perform transitions.

@@ -62,14 +62,14 @@ jobs:
             exit 1
           fi
           bash Scripts/sign-update.sh build/release/*.zip
-      - name: Create draft with archive and checksum
+      - name: Create draft with downloads and checksums
         if: steps.existing.outputs.exists != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            build/release/*.zip build/release/*.sha256 build/release/update.json \
+            build/release/*.zip build/release/*.dmg build/release/*.sha256 build/release/update.json \
             --verify-tag --draft \
             --title "IP State ${GITHUB_REF_NAME#v}" \
             --notes-file docs/release-notes.md

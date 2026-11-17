@@ -18,11 +18,16 @@ done
 
 output_dir="$project_dir/build/release"
 archive_name="IPState-${version}-universal-macos.zip"
+dmg_name="IPState-${version}-universal-macos.dmg"
 mkdir -p "$output_dir"
 /usr/bin/ditto -c -k --keepParent "$app_dir" "$output_dir/$archive_name"
+bash "$project_dir/Scripts/package-dmg.sh" "$app_dir" "$output_dir/$dmg_name"
 (
     cd "$output_dir"
-    /usr/bin/shasum -a 256 "$archive_name" > "$archive_name.sha256"
+    for download in "$archive_name" "$dmg_name"; do
+        /usr/bin/shasum -a 256 "$download" > "$download.sha256"
+    done
 )
 
-printf '%s\n' "$output_dir/$archive_name" "$output_dir/$archive_name.sha256"
+printf '%s\n' "$output_dir/$archive_name" "$output_dir/$archive_name.sha256" \
+    "$output_dir/$dmg_name" "$output_dir/$dmg_name.sha256"

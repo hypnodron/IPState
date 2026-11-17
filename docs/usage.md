@@ -4,6 +4,15 @@ IP State lives in the menu bar. Click its item to view addresses, refresh, copy 
 
 There is no Dock icon or main app window.
 
+## Installation
+
+Download the DMG from the [latest release](https://github.com/hypnodron/IPState/releases/latest).
+Open it and drag **IP State.app** onto the **Applications** shortcut.
+Eject the disk image, then open **IP State** from Applications.
+
+The ZIP download is also available. Extract it and move **IP State.app** into Applications.
+App updates use the signed ZIP automatically, regardless of your initial download format.
+
 ## App updates
 
 Choose **Check for Updates…** in the menu to check for a new app version.

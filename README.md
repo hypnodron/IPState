@@ -45,9 +45,12 @@ Switch VPN locations, reconnect to Wi-Fi, or change networks. See your current p
 
 ## 🚀 Get started
 
-1. **[Download the universal macOS ZIP](https://github.com/hypnodron/IPState/releases/latest)** from the latest stable release.
-2. Extract it and move **IP State.app** into **Applications**.
-3. Open the app. Click its menu bar item, then choose **Settings…** to make it yours.
+1. **[Download the universal macOS DMG](https://github.com/hypnodron/IPState/releases/latest)** from the latest stable release.
+2. Open the disk image. Drag **IP State.app** onto the **Applications** shortcut.
+3. Eject the disk image. Open **IP State** from Applications.
+4. Click its menu bar item, then choose **Settings…** to make it yours.
+
+A **ZIP** download is also available. Extract it and move **IP State.app** into **Applications**.
 
 > [!NOTE]
 > The downloadable app is ad-hoc signed and **not yet notarized by Apple**. macOS may block its first launch.
@@ -120,7 +123,9 @@ See [Contributing](CONTRIBUTING.md) for development guidance and [the release gu
 🐛 [Report a bug](https://github.com/hypnodron/IPState/issues/new?template=bug_report.yml) or 💡 [suggest a feature](https://github.com/hypnodron/IPState/issues/new?template=feature_request.yml).
 Code contributions are welcome—see [Contributing](CONTRIBUTING.md) to get started.
 
-Check out my other projects at [hypnodron.com](https://hypnodron.com).
+<h3 align="center">
+  <a href="https://hypnodron.com">Check out all my projects</a>
+</h3>
 
 ## 📄 License
 

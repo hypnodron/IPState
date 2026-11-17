@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 — DMG download
+
+- Add a universal DMG with a branded background, installation arrow, and Applications shortcut.
+- Publish SHA-256 checksums for both the DMG and ZIP downloads.
+- Keep the signed ZIP as the archive for app updates.
+
 ## 1.0.0 — First stable release
 
 - Publish the first stable release with public IP and location display, IP-change alerts, and optional connection alerts.

@@ -67,13 +67,14 @@ jobs:
           assets = json.loads(Path("build/icon-assets.json").read_text())
           assert any(a.get("AssetType") == "IconImageStack" and a.get("Name") == "AppIcon" for a in assets)
           PY
-      - name: Upload app archive and checksum
+      - name: Upload app downloads and checksums
         if: github.event_name == 'workflow_dispatch' && inputs.create_archive
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: IPState-universal-macos
           path: |
             build/release/*.zip
+            build/release/*.dmg
             build/release/*.sha256
           if-no-files-found: error
           retention-days: 14

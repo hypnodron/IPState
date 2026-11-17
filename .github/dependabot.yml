@@ -1,10 +1,20 @@
 version: 2
+
+multi-ecosystem-groups:
+  monthly-maintenance:
+    schedule:
+      interval: monthly
+
 updates:
   - package-ecosystem: github-actions
     directory: /
-    schedule:
-      interval: monthly
+    patterns: ["*"]
+    multi-ecosystem-group: monthly-maintenance
   - package-ecosystem: swift
     directory: /
-    schedule:
-      interval: monthly
+    patterns: ["*"]
+    multi-ecosystem-group: monthly-maintenance
+  - package-ecosystem: pip
+    directory: /Scripts
+    patterns: ["*"]
+    multi-ecosystem-group: monthly-maintenance
