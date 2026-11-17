@@ -123,10 +123,10 @@ See [Contributing](CONTRIBUTING.md) for development guidance and [the release gu
 🐛 [Report a bug](https://github.com/hypnodron/IPState/issues/new?template=bug_report.yml) or 💡 [suggest a feature](https://github.com/hypnodron/IPState/issues/new?template=feature_request.yml).
 Code contributions are welcome—see [Contributing](CONTRIBUTING.md) to get started.
 
-<h3 align="center">
-  <a href="https://hypnodron.com">Check out all my projects</a>
-</h3>
-
 ## 📄 License
 
 [MIT](LICENSE) · Copyright 2026 hypnodron.
+
+---
+
+👉 [Check out my other projects](https://hypnodron.com)
