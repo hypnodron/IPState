@@ -5,6 +5,16 @@
     <link>https://github.com/hypnodron/IPState/releases</link>
     <description>Published updates for IP State.</description>
     <item>
+      <title>IP State 1.0.1</title>
+      <link>https://github.com/hypnodron/IPState/releases/tag/v1.0.1</link>
+      <pubDate>Tue, 17 Nov 2026 16:38:18 +0000</pubDate>
+      <sparkle:version>24</sparkle:version>
+      <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <description>&lt;p&gt;## 💿 IP State 1.0.1&lt;br&gt;&lt;br&gt;**Your public IP, at a glance.** This release adds a DMG download for drag-and-drop installation.&lt;br&gt;&lt;br&gt;### ✨ What&amp;#x27;s new&lt;br&gt;&lt;br&gt;- Add a styled universal DMG with an installation arrow, **IP State.app**, and an **Applications** shortcut.&lt;br&gt;- Offer SHA-256 checksums for both downloads.&lt;br&gt;- Keep the signed ZIP for automatic app updates.&lt;br&gt;&lt;br&gt;### ⬇️ Install or update&lt;br&gt;&lt;br&gt;Download **IPState-1.0.1-universal-macos.dmg**. Open it and drag **IP State.app** onto **Applications**.&lt;br&gt;Eject the disk image, then open **IP State** from Applications.&lt;br&gt;You can also download the ZIP, extract it, and move the app into Applications.&lt;br&gt;Both downloads support Apple silicon and Intel and require macOS 14 or later.&lt;br&gt;&lt;br&gt;Already on 0.11.0 or later? Choose **Check for Updates…** in the app menu.&lt;br&gt;Earlier versions need one manual installation to enable app updates.&lt;br&gt;Your existing IP State settings remain intact.&lt;br&gt;&lt;br&gt;### ℹ️ First launch&lt;br&gt;&lt;br&gt;This release is ad-hoc signed and **not notarized by Apple**. macOS may block its first launch.&lt;br&gt;See [Apple&amp;#x27;s instructions for opening an unidentified developer&amp;#x27;s app](https://support.apple.com/guide/mac-help/mh40617/mac).&lt;br&gt;The source is available if you prefer to build it yourself.&lt;br&gt;&lt;br&gt;Each `.sha256` file records the checksum of its corresponding download.&lt;br&gt;Sparkle verifies the ZIP update archive&amp;#x27;s signature before installation.&lt;br&gt;&lt;/p&gt;</description>
+      <enclosure url="https://github.com/hypnodron/IPState/releases/download/v1.0.1/IPState-1.0.1-universal-macos.zip" length="4688410" type="application/octet-stream" sparkle:edSignature="ybk+vToGz2zVvkDzdTh5Yt1IKnr65sM1QvVewya1QYQbuavAD1uFcdol5H9bEcg4k+WnkOOn9YiQb16qzgkSCg==" />
+    </item>
+    <item>
       <title>IP State 1.0.0</title>
       <link>https://github.com/hypnodron/IPState/releases/tag/v1.0.0</link>
       <pubDate>Mon, 16 Nov 2026 22:55:54 +0000</pubDate>
